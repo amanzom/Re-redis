@@ -5,6 +5,9 @@ import (
 	"io"
 	"net"
 	"strconv"
+
+	"github.com/amanzom/re-redis/core/cmd"
+	"github.com/amanzom/re-redis/core/eval"
 )
 
 type SyncTcpServer struct {
@@ -42,7 +45,7 @@ func (s *SyncTcpServer) StartSyncTcpServer() {
 
 		for {
 			// over the socket, continuously read the command and print it out
-			cmd, err := s.readCommand(conn)
+			cmd, err := readCommand(conn)
 			if err != nil {
 				if err == io.EOF {
 					clientsConnected--
@@ -55,7 +58,7 @@ func (s *SyncTcpServer) StartSyncTcpServer() {
 			}
 			fmt.Println("cmd from client: ", cmd)
 
-			err = s.respond(cmd, conn)
+			err = respond(cmd, conn)
 			if err != nil {
 				fmt.Errorf("Error writing response for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
 			}
@@ -63,23 +66,25 @@ func (s *SyncTcpServer) StartSyncTcpServer() {
 	}
 }
 
-func (s *SyncTcpServer) readCommand(conn net.Conn) (string, error) {
+func readCommand(conn net.Conn) (*cmd.RedisCmd, error) {
 	// TODO: Max read in one shot is 512 bytes
 	// To allow input > 512 bytes, then repeated read until
 	// we get EOF or designated delimiter
 
 	buffer := make([]byte, 512)
-	n, err := conn.Read(buffer)
+	n, err := conn.Read(buffer[:])
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	return string(buffer[:n]), nil
+	return cmd.GetRedisCmdObject(buffer, n)
 }
 
-func (s *SyncTcpServer) respond(cmd string, conn net.Conn) error {
-	_, err := conn.Write([]byte(cmd))
+func respond(cmd *cmd.RedisCmd, conn net.Conn) error {
+	buffer, err := eval.EvalCmd(cmd)
 	if err != nil {
+		buffer = []byte(fmt.Sprintf("-%v\r\n", err))
+	}
+	if _, err = conn.Write(buffer); err != nil {
 		return err
 	}
 	return nil

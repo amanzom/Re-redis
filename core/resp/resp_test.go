@@ -12,7 +12,7 @@ func TestSimpleStringDecode(t *testing.T) {
 		"+OK\r\n": "OK",
 	}
 	for c, v := range cases {
-		value, _ := resp.Decode(c)
+		value, _ := resp.Decode([]byte(c))
 		if value != v {
 			t.Fail()
 		}
@@ -24,7 +24,7 @@ func TestSimpleErrorDecode(t *testing.T) {
 		"-Error Message\r\n": "Error Message",
 	}
 	for c, v := range cases {
-		value, _ := resp.Decode(c)
+		value, _ := resp.Decode([]byte(c))
 		if value != v {
 			t.Fail()
 		}
@@ -37,7 +37,7 @@ func TestInt64Decode(t *testing.T) {
 		":0\r\n":   0,
 	}
 	for c, v := range cases {
-		value, _ := resp.Decode(c)
+		value, _ := resp.Decode([]byte(c))
 		if value != v {
 			t.Fail()
 		}
@@ -51,7 +51,7 @@ func TestBulkStringDecode(t *testing.T) {
 	}
 
 	for c, v := range cases {
-		value, _ := resp.Decode(c)
+		value, _ := resp.Decode([]byte(c))
 		if value != v {
 			t.Fail()
 		}
@@ -68,7 +68,7 @@ func TestArrayDecode(t *testing.T) {
 	}
 
 	for c, expectedArr := range cases {
-		value, _ := resp.Decode(c)
+		value, _ := resp.Decode([]byte(c))
 		resultArr, ok := value.([]interface{})
 		if !ok {
 			t.Fail()

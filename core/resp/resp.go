@@ -2,23 +2,24 @@ package resp
 
 import (
 	"errors"
+	"fmt"
 )
 
-func readSimpleString(expression string) (string, int, error) {
+func readSimpleString(expression []byte) (string, int, error) {
 	for pos := 1; pos < len(expression); pos++ {
 		if expression[pos] == '\r' {
-			return expression[1:pos], pos + 2, nil
+			return string(expression[1:pos]), pos + 2, nil
 		}
 	}
 	return "", 0, errors.New("invalid resp encoded string")
 }
 
-func readSimpleError(expression string) (string, int, error) {
+func readSimpleError(expression []byte) (string, int, error) {
 	return readSimpleString(expression)
 }
 
 // add negative integers support if needed
-func readInt64(expression string) (int64, int, error) {
+func readInt64(expression []byte) (int64, int, error) {
 	var val int64 = 0
 	for pos := 1; pos < len(expression); pos++ {
 		if expression[pos] == '\r' {
@@ -32,7 +33,7 @@ func readInt64(expression string) (int64, int, error) {
 	return 0, 0, errors.New("invalid resp encoded string")
 }
 
-func readLength(expression string) (int64, int, error) {
+func readLength(expression []byte) (int64, int, error) {
 	var length int64 = 0
 	for pos := 1; pos < len(expression); pos++ {
 		if expression[pos] == '\r' {
@@ -46,15 +47,15 @@ func readLength(expression string) (int64, int, error) {
 	return 0, 0, errors.New("invalid resp encoded string")
 }
 
-func readBulkString(expression string) (string, int, error) {
+func readBulkString(expression []byte) (string, int, error) {
 	length, delta, err := readLength(expression)
 	if err != nil {
 		return "", 0, err
 	}
-	return expression[delta : delta+int(length)], delta + int(length) + 2, nil
+	return string(expression[delta : delta+int(length)]), delta + int(length) + 2, nil
 }
 
-func readArray(expression string) ([]interface{}, int, error) {
+func readArray(expression []byte) ([]interface{}, int, error) {
 	length, delta, err := readLength(expression)
 	if err != nil {
 		return nil, 0, err
@@ -74,7 +75,7 @@ func readArray(expression string) ([]interface{}, int, error) {
 }
 
 // returns the req resp decoded object, delta(pos(not index) upto which elements have been read) and error
-func decodeSmall(expression string) (interface{}, int, error) {
+func decodeSmall(expression []byte) (interface{}, int, error) {
 	if len(expression) == 0 {
 		return nil, 0, errors.New("empty expression for resp decoding")
 	}
@@ -94,7 +95,20 @@ func decodeSmall(expression string) (interface{}, int, error) {
 	return nil, 0, nil
 }
 
-func Decode(expression string) (interface{}, error) {
+func Decode(expression []byte) (interface{}, error) {
 	result, _, err := decodeSmall(expression)
 	return result, err
+}
+
+// isSimple - to decide if the string value needs to be encoded as a simple string or bulk string
+func Encode(value interface{}, isSimple bool) ([]byte, error) {
+	switch value.(type) {
+	case string:
+		v := value.(string)
+		if isSimple {
+			return []byte(fmt.Sprintf("+%v\r\n", v)), nil
+		}
+		return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(v), v)), nil
+	}
+	return nil, errors.New("invalid type provided for resp encoding")
 }
