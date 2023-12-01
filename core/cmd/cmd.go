@@ -36,6 +36,7 @@ func GetRedisCmdObject(buffer []byte, n int) (*RedisCmd, error) {
 	if len(elems) == 0 {
 		return nil, errors.New("no cmd provided from client")
 	}
+
 	cmd := strings.ToUpper(elems[0])
 	var args []string
 	if len(elems) > 1 {
