@@ -15,7 +15,5 @@ func setupFlags() {
 
 func main() {
 	setupFlags()
-
-	syncTcpServer := server.NewSyncTcpServer(config.Host, config.Port)
-	syncTcpServer.StartSyncTcpServer()
+	server.NewAsyncTcpServer(config.Host, config.Port).StartServer()
 }
