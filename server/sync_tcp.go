@@ -1,10 +1,11 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"strconv"
+
+	"github.com/amanzom/re-redis/core/logger"
 )
 
 type SyncTcpServer struct {
@@ -20,13 +21,13 @@ func NewSyncTcpServer(host string, port int) Server {
 }
 
 func (s *SyncTcpServer) StartServer() {
-	fmt.Println("Starting new sync tcp server at host: ", s.Host, " Port: ", s.Port)
+	logger.Info("Starting new sync tcp server at host: %v, port: %v", s.Host, s.Port)
 
 	clientsConnected := 0
 	// server listening over the host port
 	list, err := net.Listen("tcp", s.Host+":"+strconv.Itoa(s.Port))
 	if err != nil {
-		fmt.Errorf("error in configuring server to listen at %v, %v, err: %v", s.Host, s.Port, err.Error())
+		logger.Error("error in configuring server to listen at %v, %v, err: %v", s.Host, s.Port, err.Error())
 		return
 	}
 
@@ -34,11 +35,11 @@ func (s *SyncTcpServer) StartServer() {
 		// this will be a blocking call till some client connects over the network
 		conn, err := list.Accept()
 		if err != nil {
-			fmt.Errorf("error in accepting connection at %v, %v, err: %v", s.Host, s.Port, err.Error())
+			logger.Error("error in accepting connection at %v, %v, err: %v", s.Host, s.Port, err.Error())
 			panic(err)
 		}
 		clientsConnected++
-		fmt.Println("new client connected with address: ", conn.RemoteAddr(), " with total concurrent clients ", clientsConnected)
+		logger.Info("new client connected with address: %v, with total concurrent clients: %v", conn.RemoteAddr(), clientsConnected)
 
 		for {
 			// over the socket, continuously read the command and print it out
@@ -46,18 +47,18 @@ func (s *SyncTcpServer) StartServer() {
 			if err != nil {
 				if err == io.EOF {
 					clientsConnected--
-					fmt.Println("Closing connection on ", s.Host, s.Port, " for client with address ", conn.RemoteAddr(), " with total concurrent clients ", clientsConnected)
+					logger.Info("Closing connection on: %v, %v, for client with address: %v, with total concurrent clients: %v", s.Host, s.Port, conn.RemoteAddr(), clientsConnected)
 					conn.Close()
 					break
 				}
-				fmt.Errorf("error reading for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
+				logger.Error("error reading for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
 				continue
 			}
-			fmt.Println("cmd from client: ", cmd)
+			logger.Info("cmd from client: %v", cmd)
 
 			err = respond(cmd, conn)
 			if err != nil {
-				fmt.Errorf("error writing response for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
+				logger.Error("error writing response for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
 			}
 		}
 	}
