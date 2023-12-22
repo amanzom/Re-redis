@@ -2,6 +2,7 @@ package eval
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -23,9 +24,12 @@ func EvalCmd(cmd *cmd.RedisCmd) ([]byte, error) {
 	case constants.Ttl:
 		return evalTtl(cmd.Args)
 	default:
-		// temp default handling
-		return evalPing(cmd.Args)
+		return evalNotSupportedCmd(cmd.Cmd, cmd.Args)
 	}
+}
+
+func evalNotSupportedCmd(cmd string, args []string) ([]byte, error) {
+	return nil, fmt.Errorf("ERR unknown command: '%v', with args beginning with: '%v'", cmd, strings.Join(args, "', '"))
 }
 
 func evalPing(args []string) ([]byte, error) {
@@ -43,7 +47,7 @@ func evalPing(args []string) ([]byte, error) {
 
 func evalSet(args []string) ([]byte, error) {
 	if len(args) <= 1 {
-		return nil, errors.New("(error) ERR wrong number of arguments for 'set' command")
+		return nil, errors.New("ERR wrong number of arguments for 'set' command")
 	}
 
 	// first 2 agrs as key and value
@@ -54,16 +58,16 @@ func evalSet(args []string) ([]byte, error) {
 		if strings.ToLower(args[i]) == constants.EX {
 			i++
 			if i == len(args) {
-				return nil, errors.New("(error) ERR syntax error")
+				return nil, errors.New("ERR syntax error")
 			}
 			expiryInSec, err := strconv.ParseInt(args[i], 10, 64)
 			if err != nil {
-				return nil, errors.New("(error) ERR value is not an integer or out of range")
+				return nil, errors.New("ERR value is not an integer or out of range")
 			}
 
 			expiryInMs = expiryInSec * 1000
 		} else {
-			return nil, errors.New("(error) ERR syntax error")
+			return nil, errors.New("ERR syntax error")
 		}
 	}
 
@@ -73,7 +77,7 @@ func evalSet(args []string) ([]byte, error) {
 
 func evalGet(args []string) ([]byte, error) {
 	if len(args) != 1 {
-		return nil, errors.New("(error) ERR wrong number of arguments for 'get' command")
+		return nil, errors.New("ERR wrong number of arguments for 'get' command")
 	}
 
 	obj := store.Get(args[0]) // args[0] represents key
@@ -85,7 +89,7 @@ func evalGet(args []string) ([]byte, error) {
 
 func evalTtl(args []string) ([]byte, error) {
 	if len(args) != 1 {
-		return nil, errors.New("(error) ERR wrong number of arguments for 'ttl' command")
+		return nil, errors.New("ERR wrong number of arguments for 'ttl' command")
 	}
 
 	obj := store.Get(args[0])                                                           // args[0] represents key
