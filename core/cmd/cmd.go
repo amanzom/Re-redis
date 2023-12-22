@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/amanzom/re-redis/core/resp"
 )
@@ -37,7 +36,7 @@ func GetRedisCmdObject(buffer []byte, n int) (*RedisCmd, error) {
 		return nil, errors.New("no cmd provided from client")
 	}
 
-	cmd := strings.ToUpper(elems[0])
+	cmd := elems[0]
 	var args []string
 	if len(elems) > 1 {
 		args = elems[1:]
