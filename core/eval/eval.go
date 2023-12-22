@@ -9,7 +9,7 @@ import (
 	"github.com/amanzom/re-redis/core/cmd"
 	"github.com/amanzom/re-redis/core/constants"
 	"github.com/amanzom/re-redis/core/resp"
-	"github.com/amanzom/re-redis/core/store.go"
+	"github.com/amanzom/re-redis/core/store"
 )
 
 func EvalCmd(cmd *cmd.RedisCmd) ([]byte, error) {
