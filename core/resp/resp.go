@@ -109,6 +109,9 @@ func Encode(value interface{}, isSimple bool) ([]byte, error) {
 			return []byte(fmt.Sprintf("+%v\r\n", v)), nil
 		}
 		return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(v), v)), nil
+	case int64:
+		v := value.(int64)
+		return []byte(fmt.Sprintf(":%v\r\n", v)), nil
 	}
 	return nil, errors.New("invalid type provided for resp encoding")
 }
