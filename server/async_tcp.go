@@ -1,11 +1,11 @@
 package server
 
 import (
-	"fmt"
 	"net"
 	"syscall"
 
 	"github.com/amanzom/re-redis/core/comm"
+	"github.com/amanzom/re-redis/core/logger"
 )
 
 const (
@@ -26,7 +26,7 @@ func NewAsyncTcpServer(host string, port int) Server {
 
 // using kqueue in go: https://dev.to/frosnerd/writing-a-simple-tcp-server-using-kqueue-cah
 func (s *AsyncTcpServer) StartServer() {
-	fmt.Println("Starting new async tcp server at host: ", s.Host, " Port: ", s.Port)
+	logger.Info("Starting new async tcp server at host: %v and port: %v", s.Host, s.Port)
 
 	// creating the socket
 	// params description:
@@ -35,7 +35,7 @@ func (s *AsyncTcpServer) StartServer() {
 	// protocol we want to use: Protocol 0 in SOCK_STREAM sockets corresponds to TCP.
 	socketFD, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
-		fmt.Errorf("error creating the socket, err: %v", err)
+		logger.Error("error creating the socket, err: %v", err)
 		return
 	}
 	defer syscall.Close(socketFD)
@@ -47,7 +47,7 @@ func (s *AsyncTcpServer) StartServer() {
 	// or requesting/sending data over a tcp conn over this socket), not processing them.  Processing these requests will happen based on whether we
 	// are ready for that particular IO. Concurrent processing of requests is handled below by IO multiplexing.
 	if err := syscall.SetNonblock(socketFD, true); err != nil {
-		fmt.Errorf("error setting socket in non blocking mode, err: %v", err)
+		logger.Error("error setting socket in non blocking mode, err: %v", err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func (s *AsyncTcpServer) StartServer() {
 		Port: s.Port,
 		Addr: [4]byte{ip4[0], ip4[1], ip4[2], ip4[3]},
 	}); err != nil {
-		fmt.Errorf("error binding the address, err: %v", err)
+		logger.Error("error binding the address, err: %v", err)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (s *AsyncTcpServer) StartServer() {
 	// setting backlog - 2000: represent maximum no of pending requests that can go in socket's listen queue.
 	// if the number of incoming requests over the socket exceeds the backlog, additional request attempts may be refused.
 	if err := syscall.Listen(socketFD, maxClients); err != nil {
-		fmt.Errorf("error listening over %v, %v, err: %v", s.Host, s.Port, err)
+		logger.Error("error listening over %v, %v, err: %v", s.Host, s.Port, err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (s *AsyncTcpServer) StartServer() {
 	// creating kernel event queue
 	kqueueFD, err := syscall.Kqueue()
 	if err != nil {
-		fmt.Errorf("failed creating kqueue fd, err: %v", err)
+		logger.Error("failed creating kqueue fd, err: %v", err)
 		return
 	}
 	defer syscall.Close(kqueueFD)
@@ -97,7 +97,7 @@ func (s *AsyncTcpServer) StartServer() {
 		nil,
 	)
 	if err != nil || changeEventRegistered == -1 {
-		fmt.Errorf("failed registering change event to kqueue, err: %v", err)
+		logger.Error("failed registering change event to kqueue, err: %v", err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (s *AsyncTcpServer) StartServer() {
 			nil,
 		)
 		if err != nil {
-			fmt.Errorf("failed pooling events from kqueue, err: %v", err)
+			logger.Error("failed pooling events from kqueue, err: %v", err)
 			continue
 		}
 
@@ -125,12 +125,12 @@ func (s *AsyncTcpServer) StartServer() {
 				// accepting the incoming tcp connection
 				socketConnectionFD, _, err := syscall.Accept(currentEventFD)
 				if err != nil {
-					fmt.Errorf("failed accepting client connection over socket, err: %v", err)
+					logger.Error("failed accepting client connection over socket, err: %v", err)
 					continue
 				}
 
 				if err := syscall.SetNonblock(socketConnectionFD, true); err != nil {
-					fmt.Errorf("failed setting socket connection in non blocking mode, err: %v", err)
+					logger.Error("failed setting socket connection in non blocking mode, err: %v", err)
 					syscall.Close(socketConnectionFD)
 					continue
 				}
@@ -152,24 +152,24 @@ func (s *AsyncTcpServer) StartServer() {
 					nil,
 				)
 				if err != nil || socketEventRegistered == -1 {
-					fmt.Errorf("failed registering socket change event to kqueue, err: %v", err)
+					logger.Error("failed registering socket change event to kqueue, err: %v", err)
 					syscall.Close(socketConnectionFD)
 					continue
 				}
 
 				clientsConnected++
-				fmt.Println("new client connected with address: with total concurrent clients ", clientsConnected)
+				logger.Info("new client connected with address: with total concurrent clients: %v", clientsConnected)
 
 			} else { // request to read some data over socket
 				comm := &comm.FDComm{Fd: currentEventFD}
 				cmd, err := readCommand(comm)
 				if err != nil {
 					clientsConnected--
-					fmt.Println("Closing connection on ", s.Host, s.Port, " with total concurrent clients ", clientsConnected)
+					logger.Info("Closing connection on: %v, %v with total concurrent clients: %v", s.Host, s.Port, clientsConnected)
 					syscall.Close(currentEventFD)
 					continue
 				}
-				fmt.Println("cmd from client: ", cmd)
+				logger.Info("cmd from client: %v", cmd)
 				respond(cmd, comm)
 			}
 		}
