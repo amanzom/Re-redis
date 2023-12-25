@@ -29,5 +29,21 @@ func Put(k string, obj *Obj) {
 }
 
 func Get(k string) *Obj {
-	return store[k]
+	// passively delete before get
+	val, ok := store[k]
+	if ok {
+		if val.ExpiresAt != -1 && val.ExpiresAt <= time.Now().UnixMilli() {
+			delete(store, k)
+			return nil
+		}
+	}
+	return val
+}
+
+func Del(k string) bool {
+	if _, ok := store[k]; ok {
+		delete(store, k)
+		return true
+	}
+	return false
 }

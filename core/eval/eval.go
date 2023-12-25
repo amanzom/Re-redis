@@ -23,6 +23,10 @@ func EvalCmd(cmd *cmd.RedisCmd) ([]byte, error) {
 		return evalGet(cmd.Args)
 	case constants.Ttl:
 		return evalTtl(cmd.Args)
+	case constants.Expire:
+		return evalExpire(cmd.Args)
+	case constants.Del:
+		return evalDel(cmd.Args)
 	default:
 		return evalNotSupportedCmd(cmd.Cmd, cmd.Args)
 	}
@@ -81,7 +85,7 @@ func evalGet(args []string) ([]byte, error) {
 	}
 
 	obj := store.Get(args[0]) // args[0] represents key
-	if obj == nil || (obj.ExpiresAt != -1 && time.Now().UnixMilli() >= obj.ExpiresAt) {
+	if obj == nil {
 		return []byte(constants.RESP_NIL), nil
 	}
 	return resp.Encode(obj.Value, false)
@@ -92,8 +96,8 @@ func evalTtl(args []string) ([]byte, error) {
 		return nil, errors.New("ERR wrong number of arguments for 'ttl' command")
 	}
 
-	obj := store.Get(args[0])                                                           // args[0] represents key
-	if obj == nil || (obj.ExpiresAt != -1 && time.Now().UnixMilli() >= obj.ExpiresAt) { // obj not found or has expired
+	obj := store.Get(args[0]) // args[0] represents key
+	if obj == nil {           // obj not found or has expired
 		return []byte(":-2\r\n"), nil
 	}
 	if obj.ExpiresAt == -1 { // ttl not set
@@ -102,4 +106,38 @@ func evalTtl(args []string) ([]byte, error) {
 
 	timeRemainingInSec := (obj.ExpiresAt - time.Now().UnixMilli()) / 1000
 	return resp.Encode(timeRemainingInSec, false)
+}
+
+func evalExpire(args []string) ([]byte, error) {
+	if len(args) <= 1 {
+		return nil, errors.New("ERR wrong number of arguments for 'expire' command")
+	}
+
+	expiryInSecs, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return nil, errors.New("ERR value is not an integer or out of range")
+	}
+
+	val := store.Get(args[0])
+	if val == nil { // key not present or has expired
+		return []byte(":0\r\n"), nil
+	}
+
+	val.ExpiresAt = time.Now().UnixMilli() + expiryInSecs*1000
+	return []byte(":1\r\n"), nil
+}
+
+func evalDel(args []string) ([]byte, error) {
+	if len(args) == 0 {
+		return nil, errors.New("ERR wrong number of arguments for 'del' command")
+	}
+
+	countDeleted := 0
+	for _, key := range args {
+		if isDeleted := store.Del(key); isDeleted {
+			countDeleted++
+		}
+	}
+
+	return resp.Encode(countDeleted, false)
 }

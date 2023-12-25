@@ -102,15 +102,13 @@ func Decode(expression []byte) (interface{}, error) {
 
 // isSimple - to decide if the string value needs to be encoded as a simple string or bulk string
 func Encode(value interface{}, isSimple bool) ([]byte, error) {
-	switch value.(type) {
+	switch v := value.(type) {
 	case string:
-		v := value.(string)
 		if isSimple {
 			return []byte(fmt.Sprintf("+%v\r\n", v)), nil
 		}
 		return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(v), v)), nil
-	case int64:
-		v := value.(int64)
+	case int, int8, int64, int32:
 		return []byte(fmt.Sprintf(":%v\r\n", v)), nil
 	}
 	return nil, errors.New("invalid type provided for resp encoding")

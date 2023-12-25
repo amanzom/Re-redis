@@ -3,9 +3,11 @@ package server
 import (
 	"net"
 	"syscall"
+	"time"
 
 	"github.com/amanzom/re-redis/core/comm"
 	"github.com/amanzom/re-redis/core/logger"
+	"github.com/amanzom/re-redis/core/store"
 )
 
 const (
@@ -23,6 +25,9 @@ func NewAsyncTcpServer(host string, port int) Server {
 		Port: port,
 	}
 }
+
+var autoDeletionCronLastExecTime = time.Now()
+var autoDeletionCronFreq = 1 * time.Second
 
 // using kqueue in go: https://dev.to/frosnerd/writing-a-simple-tcp-server-using-kqueue-cah
 func (s *AsyncTcpServer) StartServer() {
@@ -104,6 +109,12 @@ func (s *AsyncTcpServer) StartServer() {
 	// event loop pooling
 	clientsConnected := 0
 	for {
+		// auto deletion of expired keys
+		if time.Now().After(autoDeletionCronLastExecTime.Add(autoDeletionCronFreq)) {
+			store.DeleteExpiredKeys()
+			autoDeletionCronLastExecTime = time.Now()
+		}
+
 		// when registered fds are ready for IO, will be pushed into kqueue which are polled out in newEvents
 		newEvents := make([]syscall.Kevent_t, maxClients)
 		numNewEvents, err := syscall.Kevent( // blocking call till any of the fds are available for IO
