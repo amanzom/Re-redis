@@ -1,6 +1,10 @@
 package store
 
-import "time"
+import (
+	"time"
+
+	"github.com/amanzom/re-redis/config"
+)
 
 type Obj struct {
 	Value     interface{}
@@ -25,6 +29,11 @@ func NewObj(value interface{}, expiryInMs int64) *Obj {
 }
 
 func Put(k string, obj *Obj) {
+	// evict keys if total nums of keys goes beyond a threshold
+	// TODO - think of linking eviction to memory and not num keys
+	if len(store) >= config.NumKeysThresholdForEviction {
+		evict()
+	}
 	store[k] = obj
 }
 

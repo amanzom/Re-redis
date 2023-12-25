@@ -16,4 +16,7 @@ const (
 	// resp
 	RESP_NIL = "$-1\r\n"
 	RESP_OK  = "+OK\r\n"
+
+	// eviction strategies
+	EvictionStrategySimpleFirst = "simple-first"
 )
