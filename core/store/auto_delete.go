@@ -16,6 +16,9 @@ const (
 func expireSample() float64 {
 	leftNonExpiredKeysToIterate := sampleSize // will maintain count of keys which have expiration set and not deleted
 	noOfDeletedKeys := 0
+
+	// assuming iteration in golang hashmaps are randomized
+	// TODO - optimise sampling of keys and unecessary iteration
 	for key, val := range store {
 		if val != nil && val.ExpiresAt != -1 {
 			leftNonExpiredKeysToIterate--
