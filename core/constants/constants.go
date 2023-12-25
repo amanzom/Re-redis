@@ -2,11 +2,13 @@ package constants
 
 const (
 	// commands
-	Ping = "ping"
-	Pong = "pong"
-	Set  = "set"
-	Get  = "get"
-	Ttl  = "ttl"
+	Ping   = "ping"
+	Pong   = "pong"
+	Set    = "set"
+	Get    = "get"
+	Ttl    = "ttl"
+	Expire = "expire"
+	Del    = "del"
 
 	// args
 	EX = "ex"
