@@ -132,7 +132,11 @@ func (s *AsyncTcpServer) StartServer() {
 			currentEvent := newEvents[i]
 			currentEventFD := int(currentEvent.Ident)
 
-			if currentEventFD == socketFD { // new tcp connection request over socket
+			if currentEvent.Flags&syscall.EV_EOF != 0 { // client closing connection
+				clientsConnected--
+				logger.Info("Closing connection on: %v, %v with total concurrent clients: %v", s.Host, s.Port, clientsConnected)
+				syscall.Close(currentEventFD)
+			} else if currentEventFD == socketFD { // new tcp connection request over socket
 				// accepting the incoming tcp connection
 				socketConnectionFD, _, err := syscall.Accept(currentEventFD)
 				if err != nil {
@@ -169,19 +173,22 @@ func (s *AsyncTcpServer) StartServer() {
 				}
 
 				clientsConnected++
-				logger.Info("new client connected with address: with total concurrent clients: %v", clientsConnected)
+				logger.Info("new client connected with total concurrent clients: %v", clientsConnected)
 
 			} else { // request to read some data over socket
 				comm := &comm.FDComm{Fd: currentEventFD}
-				cmd, err := readCommand(comm)
+				cmds, err := readCommands(comm)
 				if err != nil {
 					clientsConnected--
 					logger.Info("Closing connection on: %v, %v with total concurrent clients: %v", s.Host, s.Port, clientsConnected)
 					syscall.Close(currentEventFD)
 					continue
 				}
-				logger.Info("cmd from client: %v", cmd)
-				respond(cmd, comm)
+				logger.Info("cmds from client: %v", cmds)
+				err = respond(cmds, comm)
+				if err != nil {
+					logger.Error("error writing response at host, port: %v, %v, err: %v", s.Host, s.Port, err.Error())
+				}
 			}
 		}
 	}

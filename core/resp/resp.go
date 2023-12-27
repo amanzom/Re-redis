@@ -3,6 +3,9 @@ package resp
 import (
 	"errors"
 	"fmt"
+
+	"github.com/amanzom/re-redis/core/constants"
+	"github.com/amanzom/re-redis/core/logger"
 )
 
 func readSimpleString(expression []byte) (string, int, error) {
@@ -92,24 +95,39 @@ func decodeSmall(expression []byte) (interface{}, int, error) {
 	case '*':
 		return readArray(expression)
 	}
-	return nil, 0, nil
+	return nil, 0, errors.New("invalid expression for resp decoding")
 }
 
 func Decode(expression []byte) (interface{}, error) {
-	result, _, err := decodeSmall(expression)
-	return result, err
+	result := make([]interface{}, 0)
+	index := 0
+	for index < len(string(expression)) {
+		smallResult, delta, err := decodeSmall(expression[index:])
+		if err != nil {
+			// error could be ignored if we want to read partial cmds in case of pipelining
+			logger.Error("error decoding expression, err: %v", err)
+			return nil, errors.New(fmt.Sprintf("error decoding expression, err: %v", err))
+		}
+		result = append(result, smallResult)
+		index += delta
+	}
+	return result, nil
 }
 
 // isSimple - to decide if the string value needs to be encoded as a simple string or bulk string
-func Encode(value interface{}, isSimple bool) ([]byte, error) {
+func Encode(value interface{}, isSimple bool) []byte {
 	switch v := value.(type) {
 	case string:
 		if isSimple {
-			return []byte(fmt.Sprintf("+%v\r\n", v)), nil
+			return []byte(fmt.Sprintf("+%v\r\n", v))
 		}
-		return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(v), v)), nil
+		return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(v), v))
 	case int, int8, int64, int32:
-		return []byte(fmt.Sprintf(":%v\r\n", v)), nil
+		return []byte(fmt.Sprintf(":%v\r\n", v))
+	case error:
+		return []byte(fmt.Sprintf("-%v\r\n", v))
+	default:
+		logger.Error("invalid value provided for resp encoding")
+		return []byte(constants.RESP_NIL)
 	}
-	return nil, errors.New("invalid type provided for resp encoding")
 }
