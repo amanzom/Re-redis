@@ -43,7 +43,7 @@ func (s *SyncTcpServer) StartServer() {
 
 		for {
 			// over the socket, continuously read the command and print it out
-			cmd, err := readCommand(conn)
+			cmds, err := readCommands(conn)
 			if err != nil {
 				if err == io.EOF {
 					clientsConnected--
@@ -54,9 +54,9 @@ func (s *SyncTcpServer) StartServer() {
 				logger.Error("error reading for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
 				continue
 			}
-			logger.Info("cmd from client: %v", cmd)
+			logger.Info("cmd from client: %v", cmds)
 
-			err = respond(cmd, conn)
+			err = respond(cmds, conn)
 			if err != nil {
 				logger.Error("error writing response for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
 			}

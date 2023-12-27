@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,33 +14,38 @@ import (
 	"github.com/amanzom/re-redis/core/store"
 )
 
-func EvalCmd(cmd *cmd.RedisCmd) ([]byte, error) {
-	switch strings.ToLower(cmd.Cmd) {
-	case constants.Ping:
-		return evalPing(cmd.Args)
-	case constants.Set:
-		return evalSet(cmd.Args)
-	case constants.Get:
-		return evalGet(cmd.Args)
-	case constants.Ttl:
-		return evalTtl(cmd.Args)
-	case constants.Expire:
-		return evalExpire(cmd.Args)
-	case constants.Del:
-		return evalDel(cmd.Args)
-	default:
-		return evalNotSupportedCmd(cmd.Cmd, cmd.Args)
+func EvalCmds(cmds []*cmd.RedisCmd) []byte {
+	var response []byte
+	buf := bytes.NewBuffer(response)
+	for _, cmd := range cmds {
+		switch strings.ToLower(cmd.Cmd) {
+		case constants.Ping:
+			buf.Write(evalPing(cmd.Args))
+		case constants.Set:
+			buf.Write(evalSet(cmd.Args))
+		case constants.Get:
+			buf.Write(evalGet(cmd.Args))
+		case constants.Ttl:
+			buf.Write(evalTtl(cmd.Args))
+		case constants.Expire:
+			buf.Write(evalExpire(cmd.Args))
+		case constants.Del:
+			buf.Write(evalDel(cmd.Args))
+		default:
+			buf.Write(evalNotSupportedCmd(cmd.Cmd, cmd.Args))
+		}
 	}
+	return buf.Bytes()
 }
 
-func evalNotSupportedCmd(cmd string, args []string) ([]byte, error) {
-	return nil, fmt.Errorf("ERR unknown command: '%v', with args beginning with: '%v'", cmd, strings.Join(args, "', '"))
+func evalNotSupportedCmd(cmd string, args []string) []byte {
+	return resp.Encode(fmt.Errorf("ERR unknown command: '%v', with args beginning with: '%v'", cmd, strings.Join(args, "', '")), false)
 }
 
-func evalPing(args []string) ([]byte, error) {
+func evalPing(args []string) []byte {
 	// - if more than one args exists return error
 	if len(args) > 1 {
-		return nil, errors.New("ERR wrong number of arguments for 'ping' command")
+		return resp.Encode(errors.New("ERR wrong number of arguments for 'ping' command"), false)
 	}
 	// if args empty - respond with PONG
 	if len(args) == 0 {
@@ -49,9 +55,9 @@ func evalPing(args []string) ([]byte, error) {
 	return resp.Encode(args[0], false)
 }
 
-func evalSet(args []string) ([]byte, error) {
+func evalSet(args []string) []byte {
 	if len(args) <= 1 {
-		return nil, errors.New("ERR wrong number of arguments for 'set' command")
+		return resp.Encode(errors.New("ERR wrong number of arguments for 'set' command"), false)
 	}
 
 	// first 2 agrs as key and value
@@ -62,74 +68,74 @@ func evalSet(args []string) ([]byte, error) {
 		if strings.ToLower(args[i]) == constants.EX {
 			i++
 			if i == len(args) {
-				return nil, errors.New("ERR syntax error")
+				return resp.Encode(errors.New("ERR syntax error"), false)
 			}
 			expiryInSec, err := strconv.ParseInt(args[i], 10, 64)
 			if err != nil {
-				return nil, errors.New("ERR value is not an integer or out of range")
+				return resp.Encode(errors.New("ERR value is not an integer or out of range"), false)
 			}
 
 			expiryInMs = expiryInSec * 1000
 		} else {
-			return nil, errors.New("ERR syntax error")
+			return resp.Encode(errors.New("ERR syntax error"), false)
 		}
 	}
 
 	store.Put(key, store.NewObj(val, expiryInMs))
-	return []byte(constants.RESP_OK), nil
+	return []byte(constants.RESP_OK)
 }
 
-func evalGet(args []string) ([]byte, error) {
+func evalGet(args []string) []byte {
 	if len(args) != 1 {
-		return nil, errors.New("ERR wrong number of arguments for 'get' command")
+		return resp.Encode(errors.New("ERR wrong number of arguments for 'get' command"), false)
 	}
 
 	obj := store.Get(args[0]) // args[0] represents key
 	if obj == nil {
-		return []byte(constants.RESP_NIL), nil
+		return []byte(constants.RESP_NIL)
 	}
 	return resp.Encode(obj.Value, false)
 }
 
-func evalTtl(args []string) ([]byte, error) {
+func evalTtl(args []string) []byte {
 	if len(args) != 1 {
-		return nil, errors.New("ERR wrong number of arguments for 'ttl' command")
+		return resp.Encode(errors.New("ERR wrong number of arguments for 'ttl' command"), false)
 	}
 
 	obj := store.Get(args[0]) // args[0] represents key
 	if obj == nil {           // obj not found or has expired
-		return []byte(":-2\r\n"), nil
+		return []byte(":-2\r\n")
 	}
 	if obj.ExpiresAt == -1 { // ttl not set
-		return []byte(":-1\r\n"), nil
+		return []byte(":-1\r\n")
 	}
 
 	timeRemainingInSec := (obj.ExpiresAt - time.Now().UnixMilli()) / 1000
 	return resp.Encode(timeRemainingInSec, false)
 }
 
-func evalExpire(args []string) ([]byte, error) {
+func evalExpire(args []string) []byte {
 	if len(args) <= 1 {
-		return nil, errors.New("ERR wrong number of arguments for 'expire' command")
+		return resp.Encode(errors.New("ERR wrong number of arguments for 'expire' command"), false)
 	}
 
 	expiryInSecs, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return nil, errors.New("ERR value is not an integer or out of range")
+		return resp.Encode(errors.New("ERR value is not an integer or out of range"), false)
 	}
 
 	val := store.Get(args[0])
 	if val == nil { // key not present or has expired
-		return []byte(":0\r\n"), nil
+		return []byte(":0\r\n")
 	}
 
 	val.ExpiresAt = time.Now().UnixMilli() + expiryInSecs*1000
-	return []byte(":1\r\n"), nil
+	return []byte(":1\r\n")
 }
 
-func evalDel(args []string) ([]byte, error) {
+func evalDel(args []string) []byte {
 	if len(args) == 0 {
-		return nil, errors.New("ERR wrong number of arguments for 'del' command")
+		return resp.Encode(errors.New("ERR wrong number of arguments for 'del' command"), false)
 	}
 
 	countDeleted := 0
