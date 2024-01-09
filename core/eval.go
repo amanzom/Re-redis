@@ -107,6 +107,7 @@ func evalTtl(args []string) []byte {
 		return encode(errors.New("ERR wrong number of arguments for 'ttl' command"), false)
 	}
 
+	key := args[0]
 	obj := GetFromStore(args[0]) // args[0] represents key
 	if obj == nil {              // obj not found or has expired
 		return []byte(":-2\r\n")
@@ -116,6 +117,8 @@ func evalTtl(args []string) []byte {
 	}
 
 	timeRemainingInSec := (obj.ExpiresAt - time.Now().UnixMilli()) / 1000
+	// storing in commands buffer for aof writes periodically
+	commandsBuffer.Write(getKeyValueExpireCommandRespEncodedBytes(key, obj.Value, int(timeRemainingInSec)))
 	return encode(timeRemainingInSec, false)
 }
 

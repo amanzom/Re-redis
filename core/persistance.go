@@ -13,10 +13,10 @@ import (
 )
 
 // Note for persisance of keys with expiration:
-// 1. expiry related commands are logged on aof - in set with ex, expire commands, and taking entire snapshot via background - left
-// 2. background rewrite snapshot making time - expiried keys are not set. - in future this will run frequently(every 1 sec), so will make a lot of expired keys to be skipped from aof - done
-// 3. during passive deletion of expired keys - we log a del command in aof - done
-// 4. active deletion of expired keys also handles deletion commmad logging in aof - will run 20 times in a sec in future so will handle a lot of left cases. - done
+// 1. expiry related commands are logged on aof - in set with ex, expire commands, and taking entire snapshot via background.
+// 2. background rewrite snapshot making time - expiried keys are not set. - in future this will run frequently(every 1 sec), so will make a lot of expired keys to be skipped from aof.
+// 3. during passive deletion of expired keys - we log a del command in aof.
+// 4. active deletion of expired keys also handles deletion commmad logging in aof - will run 20 times in a sec in future so will handle a lot of left cases.
 // 5. still cases would be left to handle some of the expired keys which were logged on aof, and are were not deleted - when we reconstruct store after downtime we may see some keys to reappear.
 
 var commandsBuffer *bytes.Buffer // will be used for storing commands in buffer, and sync them in aof file periodically
@@ -156,12 +156,17 @@ func reconstructStoreFromAof() error {
 	}
 
 	// form redisCmd from buffer
-	redisCmd, err := GetRedisCmdObjects(buffer, int(n))
+	redisCmds, err := GetRedisCmdObjects(buffer, int(n))
 	if err != nil {
 		return errors.New(fmt.Sprintf("error creating redis commands during store reconstruct, err: %v", err))
 	}
 
-	EvalCmds(redisCmd)
+	// this internally will replay commands to reconstruct store and will put them in the commandsBuffer as well so reinitialise commandsBuffer
+	EvalCmds(redisCmds)
+
+	// re-initialise with empty buffer
+	var b []byte
+	commandsBuffer = bytes.NewBuffer(b)
 	logger.Info("Store reconstruct on boot up successfull")
 	return nil
 }
