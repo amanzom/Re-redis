@@ -11,12 +11,14 @@ import (
 	"github.com/amanzom/re-redis/pkg/logger"
 )
 
-// Note for persisance of keys with expiration:
-// 1. expiry related commands are logged on aof - in set with ex, expire commands, taking entire snapshot via background, active deletion of expired keys.
-// 2. during background rewrite of aof from snapshot - expiried keys are not set in aof. - in future this will run frequently(every 1 sec), so will make a lot of expired keys to be skipped from aof.
-// 3. during passive deletion of expired keys - we log a del command in aof.
-// 4. active deletion of expired keys also handles deletion commmad logging in aof - will run 20 times in a sec in future so will handle a lot of left cases.
-// 5. still cases would be left to handle some of the expired keys which were logged on aof, and are were not deleted - when we reconstruct store after downtime we may see such keys to reappear.
+// Note for persistance of keys with expiration:
+// 1. Expiry related commands are logged on aof - in set with ex, expire commands, taking entire snapshot via background, active deletion of expired keys.
+// 2. During background rewrite of aof from snapshot - expiried keys are not set in aof. - in future this will run frequently(every 1 sec), so will make a lot of expired keys to be skipped from aof.
+// 3. During passive deletion of expired keys - we log a del command in aof.
+// 4. Active deletion of expired keys also handles deletion commmad logging in aof - will run 20 times in a sec in future so will handle a lot of left cases.
+// 5. Still cases would be left to handle some of the expired keys which were logged on aof, and are were not deleted - when we reconstruct store after downtime we may see such keys to reappear,
+//    also for keys with expiration set - after we recover from downtime - we will see same ttl set for such keys in aof which was present at the instant of downtime.
+//    We can assume this expiration state as the it was at instant of downtime(not before it) since auto deletion process(running frequently in a sec) would have atleast updated the ttl of such keys.
 
 var commandsBuffer *bytes.Buffer // will be used for storing commands in buffer, and sync them in aof file periodically
 
