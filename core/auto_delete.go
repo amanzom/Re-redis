@@ -25,6 +25,10 @@ func expireSample() float64 {
 			if val.ExpiresAt <= time.Now().UnixMilli() {
 				DelFromStore(key)
 				noOfDeletedKeys++
+			} else {
+				// storing in commands buffer for aof writes periodically
+				expiryInSec := (val.ExpiresAt - time.Now().UnixMilli()) / 1000
+				commandsBuffer.Write(getKeyValueExpireCommandRespEncodedBytes(key, val, int(expiryInSec)))
 			}
 		}
 
