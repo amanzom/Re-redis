@@ -13,11 +13,11 @@ import (
 )
 
 // Note for persisance of keys with expiration:
-// 1. expiry related commands are logged on aof - in set with ex, expire commands, and taking entire snapshot via background.
-// 2. background rewrite snapshot making time - expiried keys are not set. - in future this will run frequently(every 1 sec), so will make a lot of expired keys to be skipped from aof.
+// 1. expiry related commands are logged on aof - in set with ex, expire commands, taking entire snapshot via background, active deletion of expired keys.
+// 2. during background rewrite of aof from snapshot - expiried keys are not set in aof. - in future this will run frequently(every 1 sec), so will make a lot of expired keys to be skipped from aof.
 // 3. during passive deletion of expired keys - we log a del command in aof.
 // 4. active deletion of expired keys also handles deletion commmad logging in aof - will run 20 times in a sec in future so will handle a lot of left cases.
-// 5. still cases would be left to handle some of the expired keys which were logged on aof, and are were not deleted - when we reconstruct store after downtime we may see some keys to reappear.
+// 5. still cases would be left to handle some of the expired keys which were logged on aof, and are were not deleted - when we reconstruct store after downtime we may see such keys to reappear.
 
 var commandsBuffer *bytes.Buffer // will be used for storing commands in buffer, and sync them in aof file periodically
 
