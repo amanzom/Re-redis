@@ -11,7 +11,7 @@ type RedisCmd struct {
 
 func GetRedisCmdObjects(buffer []byte, n int) ([]*RedisCmd, error) {
 	// the command will of the form list of(array of bulk strings) since we need to cater pipelining case as well
-	commandsArrayInterface, err := decode(buffer[:n])
+	commandsArrayInterface, err := Decode(buffer[:n])
 	if err != nil {
 		return nil, err
 	}

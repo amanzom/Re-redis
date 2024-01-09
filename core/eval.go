@@ -38,25 +38,25 @@ func EvalCmds(cmds []*RedisCmd) []byte {
 }
 
 func evalNotSupportedCmd(cmd string, args []string) []byte {
-	return encode(fmt.Errorf("ERR unknown command: '%v', with args beginning with: '%v'", cmd, strings.Join(args, "', '")), false)
+	return Encode(fmt.Errorf("ERR unknown command: '%v', with args beginning with: '%v'", cmd, strings.Join(args, "', '")), false)
 }
 
 func evalPing(args []string) []byte {
 	// - if more than one args exists return error
 	if len(args) > 1 {
-		return encode(errors.New("ERR wrong number of arguments for 'ping' command"), false)
+		return Encode(errors.New("ERR wrong number of arguments for 'ping' command"), false)
 	}
 	// if args empty - respond with PONG
 	if len(args) == 0 {
-		return encode(pong, true)
+		return Encode(pong, true)
 	}
 	// else - respond with the PONG 'first arg value' as a bulk string
-	return encode(args[0], false)
+	return Encode(args[0], false)
 }
 
 func evalSet(args []string) []byte {
 	if len(args) <= 1 {
-		return encode(errors.New("ERR wrong number of arguments for 'set' command"), false)
+		return Encode(errors.New("ERR wrong number of arguments for 'set' command"), false)
 	}
 
 	// first 2 agrs as key and value
@@ -69,16 +69,16 @@ func evalSet(args []string) []byte {
 		if strings.ToLower(args[i]) == ex {
 			i++
 			if i == len(args) {
-				return encode(errors.New("ERR syntax error"), false)
+				return Encode(errors.New("ERR syntax error"), false)
 			}
 			expiryInSec, err = strconv.ParseInt(args[i], 10, 64)
 			if err != nil {
-				return encode(errors.New("ERR value is not an integer or out of range"), false)
+				return Encode(errors.New("ERR value is not an integer or out of range"), false)
 			}
 
 			expiryInMs = expiryInSec * 1000
 		} else {
-			return encode(errors.New("ERR syntax error"), false)
+			return Encode(errors.New("ERR syntax error"), false)
 		}
 	}
 
@@ -92,19 +92,19 @@ func evalSet(args []string) []byte {
 
 func evalGet(args []string) []byte {
 	if len(args) != 1 {
-		return encode(errors.New("ERR wrong number of arguments for 'get' command"), false)
+		return Encode(errors.New("ERR wrong number of arguments for 'get' command"), false)
 	}
 
 	obj := GetFromStore(args[0]) // args[0] represents key
 	if obj == nil {
 		return []byte(resp_nil)
 	}
-	return encode(obj.Value, false)
+	return Encode(obj.Value, false)
 }
 
 func evalTtl(args []string) []byte {
 	if len(args) != 1 {
-		return encode(errors.New("ERR wrong number of arguments for 'ttl' command"), false)
+		return Encode(errors.New("ERR wrong number of arguments for 'ttl' command"), false)
 	}
 
 	key := args[0]
@@ -119,17 +119,17 @@ func evalTtl(args []string) []byte {
 	timeRemainingInSec := (obj.ExpiresAt - time.Now().UnixMilli()) / 1000
 	// storing in commands buffer for aof writes periodically
 	commandsBuffer.Write(getKeyValueExpireCommandRespEncodedBytes(key, obj.Value, int(timeRemainingInSec)))
-	return encode(timeRemainingInSec, false)
+	return Encode(timeRemainingInSec, false)
 }
 
 func evalExpire(args []string) []byte {
 	if len(args) <= 1 {
-		return encode(errors.New("ERR wrong number of arguments for 'expire' command"), false)
+		return Encode(errors.New("ERR wrong number of arguments for 'expire' command"), false)
 	}
 
 	expiryInSecs, err := strconv.ParseInt(args[1], 10, 64)
 	if err != nil {
-		return encode(errors.New("ERR value is not an integer or out of range"), false)
+		return Encode(errors.New("ERR value is not an integer or out of range"), false)
 	}
 
 	key := args[0]
@@ -146,7 +146,7 @@ func evalExpire(args []string) []byte {
 
 func evalDel(args []string) []byte {
 	if len(args) == 0 {
-		return encode(errors.New("ERR wrong number of arguments for 'del' command"), false)
+		return Encode(errors.New("ERR wrong number of arguments for 'del' command"), false)
 	}
 
 	countDeleted := 0
@@ -156,7 +156,7 @@ func evalDel(args []string) []byte {
 		}
 	}
 
-	return encode(countDeleted, false)
+	return Encode(countDeleted, false)
 }
 
 func evalBgWriteAof(args []string) []byte {
@@ -164,7 +164,7 @@ func evalBgWriteAof(args []string) []byte {
 	err := dumpStoreSnapshotToAof()
 	if err != nil {
 		logger.Error(err.Error())
-		return encode(errors.New("ERR performing background rewrite of AOF"), false)
+		return Encode(errors.New("ERR performing background rewrite of AOF"), false)
 	}
 	return []byte(resp_ok)
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/amanzom/re-redis/config"
@@ -169,25 +168,4 @@ func reconstructStoreFromAof() error {
 	commandsBuffer = bytes.NewBuffer(b)
 	logger.Info("Store reconstruct on boot up successfull")
 	return nil
-}
-
-// for a key, val in store - this function gives its corresponding resp command for set
-func getKeyValueSetCommandRespEncodedBytes(key string, value interface{}) []byte {
-	cmd := fmt.Sprintf("SET %v %v", key, value)
-	cmdArr := strings.Split(cmd, " ")
-	return encode(cmdArr, false)
-}
-
-// for a key, val in store - this function gives its corresponding resp command for delete
-func getKeyValueDeleteCommandRespEncodedBytes(key string) []byte {
-	cmd := fmt.Sprintf("DEL %v", key)
-	cmdArr := strings.Split(cmd, " ")
-	return encode(cmdArr, false)
-}
-
-// for a key, val, expiry in store - this function gives its corresponding resp command for expire
-func getKeyValueExpireCommandRespEncodedBytes(key string, value interface{}, expiryInSec int) []byte {
-	cmd := fmt.Sprintf("EXPIRE %v %v", key, expiryInSec)
-	cmdArr := strings.Split(cmd, " ")
-	return encode(cmdArr, false)
 }

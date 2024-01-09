@@ -10,7 +10,7 @@ func TestSimpleStringDecode(t *testing.T) {
 		"+OK\r\n": {"OK"},
 	}
 	for c, v := range cases {
-		valuesInterface, _ := decode([]byte(c))
+		valuesInterface, _ := Decode([]byte(c))
 		values := valuesInterface.([]interface{})
 		for i := 0; i < len(values); i++ {
 			if values[i].(string) != v[i] {
@@ -25,7 +25,7 @@ func TestSimpleErrorDecode(t *testing.T) {
 		"-Error Message\r\n": {"Error Message"},
 	}
 	for c, v := range cases {
-		valuesInterface, _ := decode([]byte(c))
+		valuesInterface, _ := Decode([]byte(c))
 		values := valuesInterface.([]interface{})
 		for i := 0; i < len(values); i++ {
 			if values[i].(string) != v[i] {
@@ -41,7 +41,7 @@ func TestInt64Decode(t *testing.T) {
 		":0\r\n":   {0},
 	}
 	for c, v := range cases {
-		valuesInterface, _ := decode([]byte(c))
+		valuesInterface, _ := Decode([]byte(c))
 		values := valuesInterface.([]interface{})
 		for i := 0; i < len(values); i++ {
 			if values[i].(int64) != v[i] {
@@ -59,7 +59,7 @@ func TestBulkStringDecode(t *testing.T) {
 	}
 
 	for c, v := range cases {
-		valuesInterface, _ := decode([]byte(c))
+		valuesInterface, _ := Decode([]byte(c))
 		values := valuesInterface.([]interface{})
 		for i := 0; i < len(values); i++ {
 			if values[i].(string) != v[i] {
@@ -83,7 +83,7 @@ func TestArrayDecode(t *testing.T) {
 	}
 
 	for c, expectedArr := range cases {
-		value, _ := decode([]byte(c))
+		value, _ := Decode([]byte(c))
 		resultArrInterface, ok := value.([]interface{})
 		if !ok {
 			t.Fail()

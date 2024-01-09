@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/amanzom/re-redis/pkg/logger"
 )
@@ -98,7 +99,7 @@ func decodeSmall(expression []byte) (interface{}, int, error) {
 	return nil, 0, errors.New("invalid expression for resp decoding")
 }
 
-func decode(expression []byte) (interface{}, error) {
+func Decode(expression []byte) (interface{}, error) {
 	result := make([]interface{}, 0)
 	index := 0
 	for index < len(string(expression)) {
@@ -114,12 +115,33 @@ func decode(expression []byte) (interface{}, error) {
 	return result, nil
 }
 
+// for a key, val in store - this function gives its corresponding resp command for set
+func getKeyValueSetCommandRespEncodedBytes(key string, value interface{}) []byte {
+	cmd := fmt.Sprintf("SET %v %v", key, value)
+	cmdArr := strings.Split(cmd, " ")
+	return Encode(cmdArr, false)
+}
+
+// for a key, val in store - this function gives its corresponding resp command for delete
+func getKeyValueDeleteCommandRespEncodedBytes(key string) []byte {
+	cmd := fmt.Sprintf("DEL %v", key)
+	cmdArr := strings.Split(cmd, " ")
+	return Encode(cmdArr, false)
+}
+
+// for a key, val, expiry in store - this function gives its corresponding resp command for expire
+func getKeyValueExpireCommandRespEncodedBytes(key string, value interface{}, expiryInSec int) []byte {
+	cmd := fmt.Sprintf("EXPIRE %v %v", key, expiryInSec)
+	cmdArr := strings.Split(cmd, " ")
+	return Encode(cmdArr, false)
+}
+
 func encodeAsBulkString(str string) []byte {
 	return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(str), str))
 }
 
 // isSimple - to decide if the string value needs to be encoded as a simple string or bulk string
-func encode(value interface{}, isSimple bool) []byte {
+func Encode(value interface{}, isSimple bool) []byte {
 	switch v := value.(type) {
 	case string:
 		if isSimple {
