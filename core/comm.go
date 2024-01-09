@@ -1,4 +1,4 @@
-package comm
+package core
 
 import "syscall"
 

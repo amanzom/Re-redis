@@ -5,7 +5,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/amanzom/re-redis/core/logger"
+	"github.com/amanzom/re-redis/pkg/logger"
 )
 
 type SyncTcpServer struct {

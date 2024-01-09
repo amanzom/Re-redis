@@ -1,11 +1,11 @@
-package resp
+package core
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
-	"github.com/amanzom/re-redis/core/constants"
-	"github.com/amanzom/re-redis/core/logger"
+	"github.com/amanzom/re-redis/pkg/logger"
 )
 
 func readSimpleString(expression []byte) (string, int, error) {
@@ -98,7 +98,7 @@ func decodeSmall(expression []byte) (interface{}, int, error) {
 	return nil, 0, errors.New("invalid expression for resp decoding")
 }
 
-func Decode(expression []byte) (interface{}, error) {
+func decode(expression []byte) (interface{}, error) {
 	result := make([]interface{}, 0)
 	index := 0
 	for index < len(string(expression)) {
@@ -114,20 +114,31 @@ func Decode(expression []byte) (interface{}, error) {
 	return result, nil
 }
 
+func encodeAsBulkString(str string) []byte {
+	return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(str), str))
+}
+
 // isSimple - to decide if the string value needs to be encoded as a simple string or bulk string
-func Encode(value interface{}, isSimple bool) []byte {
+func encode(value interface{}, isSimple bool) []byte {
 	switch v := value.(type) {
 	case string:
 		if isSimple {
 			return []byte(fmt.Sprintf("+%v\r\n", v))
 		}
-		return []byte(fmt.Sprintf("$%v\r\n%v\r\n", len(v), v))
+		return encodeAsBulkString(v)
 	case int, int8, int64, int32:
 		return []byte(fmt.Sprintf(":%v\r\n", v))
 	case error:
 		return []byte(fmt.Sprintf("-%v\r\n", v))
+	case []string: // encoded as array of bulk strings
+		var b []byte
+		buf := bytes.NewBuffer(b)
+		for _, str := range v {
+			buf.Write(encodeAsBulkString(str))
+		}
+		return []byte(fmt.Sprintf("*%v\r\n%v", len(v), string(buf.Bytes())))
 	default:
 		logger.Error("invalid value provided for resp encoding")
-		return []byte(constants.RESP_NIL)
+		return []byte(resp_nil)
 	}
 }

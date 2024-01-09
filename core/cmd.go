@@ -1,9 +1,7 @@
-package cmd
+package core
 
 import (
 	"errors"
-
-	"github.com/amanzom/re-redis/core/resp"
 )
 
 type RedisCmd struct {
@@ -13,7 +11,7 @@ type RedisCmd struct {
 
 func GetRedisCmdObjects(buffer []byte, n int) ([]*RedisCmd, error) {
 	// the command will of the form list of(array of bulk strings) since we need to cater pipelining case as well
-	commandsArrayInterface, err := resp.Decode(buffer[:n])
+	commandsArrayInterface, err := decode(buffer[:n])
 	if err != nil {
 		return nil, err
 	}
