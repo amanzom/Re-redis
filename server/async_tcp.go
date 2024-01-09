@@ -108,6 +108,7 @@ func (s *AsyncTcpServer) StartServer() {
 	// event loop pooling
 	clientsConnected := 0
 	for {
+		// executing crons
 		if time.Now().After(cronLastExecTime.Add(cronFreq)) {
 			// auto deletion of expired keys
 			core.DeleteExpiredKeys()
