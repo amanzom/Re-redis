@@ -3,15 +3,14 @@ package server
 import (
 	"io"
 
-	"github.com/amanzom/re-redis/core/cmd"
-	"github.com/amanzom/re-redis/core/eval"
+	"github.com/amanzom/re-redis/core"
 )
 
 type Server interface {
 	StartServer()
 }
 
-func readCommands(conn io.ReadWriter) ([]*cmd.RedisCmd, error) {
+func readCommands(conn io.ReadWriter) ([]*core.RedisCmd, error) {
 	// TODO: Max read in one shot is 512 bytes
 	// To allow input > 512 bytes, then repeated read until
 	// we get EOF or designated delimiter
@@ -21,11 +20,11 @@ func readCommands(conn io.ReadWriter) ([]*cmd.RedisCmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cmd.GetRedisCmdObjects(buffer, n)
+	return core.GetRedisCmdObjects(buffer, n)
 }
 
-func respond(cmds []*cmd.RedisCmd, conn io.ReadWriter) error {
-	buffer := eval.EvalCmds(cmds)
+func respond(cmds []*core.RedisCmd, conn io.ReadWriter) error {
+	buffer := core.EvalCmds(cmds)
 	if _, err := conn.Write(buffer); err != nil {
 		return err
 	}

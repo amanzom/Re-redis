@@ -1,9 +1,9 @@
-package store
+package core
 
 import (
 	"time"
 
-	"github.com/amanzom/re-redis/core/logger"
+	"github.com/amanzom/re-redis/pkg/logger"
 )
 
 const (
@@ -23,7 +23,7 @@ func expireSample() float64 {
 		if val != nil && val.ExpiresAt != -1 {
 			leftNonExpiredKeysToIterate--
 			if val.ExpiresAt <= time.Now().UnixMilli() {
-				delete(store, key)
+				DelFromStore(key)
 				noOfDeletedKeys++
 			}
 		}

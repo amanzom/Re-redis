@@ -5,9 +5,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/amanzom/re-redis/core/comm"
-	"github.com/amanzom/re-redis/core/logger"
-	"github.com/amanzom/re-redis/core/store"
+	"github.com/amanzom/re-redis/core"
+	"github.com/amanzom/re-redis/pkg/logger"
 )
 
 const (
@@ -26,8 +25,8 @@ func NewAsyncTcpServer(host string, port int) Server {
 	}
 }
 
-var autoDeletionCronLastExecTime = time.Now()
-var autoDeletionCronFreq = 1 * time.Second
+var cronLastExecTime = time.Now()
+var cronFreq = 1 * time.Second
 
 // using kqueue in go: https://dev.to/frosnerd/writing-a-simple-tcp-server-using-kqueue-cah
 func (s *AsyncTcpServer) StartServer() {
@@ -109,10 +108,15 @@ func (s *AsyncTcpServer) StartServer() {
 	// event loop pooling
 	clientsConnected := 0
 	for {
-		// auto deletion of expired keys
-		if time.Now().After(autoDeletionCronLastExecTime.Add(autoDeletionCronFreq)) {
-			store.DeleteExpiredKeys()
-			autoDeletionCronLastExecTime = time.Now()
+		if time.Now().After(cronLastExecTime.Add(cronFreq)) {
+			// auto deletion of expired keys
+			core.DeleteExpiredKeys()
+
+			// syncing aof file from buffer
+			if err := core.TriggerAofWriteFromBuffer(); err != nil {
+				logger.Info("error writing to aof from buffer: %v", err)
+			}
+			cronLastExecTime = time.Now()
 		}
 
 		// when registered fds are ready for IO, will be pushed into kqueue which are polled out in newEvents
@@ -176,7 +180,7 @@ func (s *AsyncTcpServer) StartServer() {
 				logger.Info("new client connected with total concurrent clients: %v", clientsConnected)
 
 			} else { // request to read some data over socket
-				comm := &comm.FDComm{Fd: currentEventFD}
+				comm := &core.FDComm{Fd: currentEventFD}
 				cmds, err := readCommands(comm)
 				if err != nil {
 					clientsConnected--
