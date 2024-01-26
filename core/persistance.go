@@ -23,7 +23,7 @@ import (
 var commandsBuffer *bytes.Buffer // will be used for storing commands in buffer, and sync them in aof file periodically
 
 // Process is similar to generating rdb file i.e take entire store snapshot and dump, but we only support aof file currently for simplicity
-// This is not how aof files are generated w.r.t redis.
+// This is not how aof files are rewritten w.r.t redis.
 // TODO: instead of taking snapshot - design an algo to read previous aof file to generate new concised AOF file.
 func dumpStoreSnapshotToAof() error {
 	// to prevent race conditions once we start running this dump logic in background, not writing directly to main aof file
@@ -43,7 +43,7 @@ func dumpStoreSnapshotToAof() error {
 
 	// write the data to temp aof file
 	for key, value := range store {
-		if value.ExpiresAt < time.Now().UnixMilli() { // skipping if key expired
+		if value.ExpiresAt != -1 && value.ExpiresAt < time.Now().UnixMilli() { // skipping if key expired
 			continue
 		}
 
