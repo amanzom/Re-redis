@@ -7,20 +7,22 @@ import (
 )
 
 type Obj struct {
-	Value     interface{}
-	ExpiresAt int64
+	Value        interface{}
+	ExpiresAt    int64
+	TypeEncoding typeEncoding
 }
 
 var store map[string]*Obj
 
-func NewObj(value interface{}, expiryInMs int64) *Obj {
+func NewObj(value interface{}, expiryInMs int64, oType uint8, oEnc uint8) *Obj {
 	var expiresAt int64 = -1
 	if expiryInMs > 0 {
 		expiresAt = time.Now().UnixMilli() + expiryInMs
 	}
 	return &Obj{
-		Value:     value,
-		ExpiresAt: expiresAt,
+		Value:        value,
+		ExpiresAt:    expiresAt,
+		TypeEncoding: typeEncoding(oType | oEnc),
 	}
 }
 

@@ -10,6 +10,7 @@ const (
 	expire     = "expire"
 	del        = "del"
 	bgWriteAof = "bgwriteaof"
+	incr       = "incr"
 
 	// args
 	ex = "ex"

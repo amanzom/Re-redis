@@ -30,6 +30,8 @@ func EvalCmds(cmds []*RedisCmd) []byte {
 			buf.Write(evalDel(cmd.Args))
 		case bgWriteAof:
 			buf.Write(evalBgWriteAof(cmd.Args))
+		case incr:
+			buf.Write(evalIncr(cmd.Args))
 		default:
 			buf.Write(evalNotSupportedCmd(cmd.Cmd, cmd.Args))
 		}
@@ -82,7 +84,10 @@ func evalSet(args []string) []byte {
 		}
 	}
 
-	PutInStore(key, NewObj(val, expiryInMs))
+	// deducing object type encoding
+	oType, oEnc := deduceTypeEncoding(val)
+
+	PutInStore(key, NewObj(val, expiryInMs, oType, oEnc))
 	if expiryInSec != -1 {
 		// storing in commands buffer for aof writes periodically
 		commandsBuffer.Write(getKeyValueExpireCommandRespEncodedBytes(key, val, int(expiryInSec)))
@@ -167,4 +172,36 @@ func evalBgWriteAof(args []string) []byte {
 		return Encode(errors.New("ERR performing background rewrite of AOF"), false)
 	}
 	return []byte(resp_ok)
+}
+
+func evalIncr(args []string) []byte {
+	if len(args) != 1 {
+		return Encode(errors.New("ERR wrong number of arguments for 'incr' command"), false)
+	}
+
+	key := args[0]
+	obj := GetFromStore(key)
+	if obj == nil {
+		obj = NewObj("0", -1, ObjectTypeString, ObjectEncodingInt)
+		PutInStore(key, obj)
+	}
+
+	if !assertType(uint8(obj.TypeEncoding), ObjectTypeString) {
+		return Encode(errors.New("ERR object type not supported for 'incr' command"), false)
+	}
+	if !assertEncoding(uint8(obj.TypeEncoding), ObjectEncodingInt) {
+		return Encode(errors.New("ERR object encoding not supported for 'incr' command"), false)
+	}
+
+	i, err := strconv.ParseInt(obj.Value.(string), 10, 64)
+	if err != nil {
+		return Encode(errors.New("ERR unable to parse object value to integer for 'incr' command"), false)
+	}
+
+	i++
+	val := strconv.FormatInt(i, 10)
+	obj.Value = val
+	// storing in commands buffer for aof writes periodically
+	commandsBuffer.Write(getKeyValueSetCommandRespEncodedBytes(key, val))
+	return Encode(i, false)
 }
