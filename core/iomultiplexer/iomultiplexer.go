@@ -6,7 +6,7 @@ type IoMultiplexerInterface interface {
 	Subscribe(eventFd int) error
 	// polling for fds which are ready for i/o
 	Poll() ([]*PolledEvent, error)
-	// closing subscription i.e. kqueue/epoll fds
+	// closing Io Multiplexer instance i.e. kqueue/epoll fds
 	Close()
 }
 

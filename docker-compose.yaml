@@ -4,3 +4,8 @@ services:
     build: .
     ports:
       - "7369:7369"
+    volumes:
+      - re-redis-data:/app # Using named volume for persisting data
+
+volumes:
+  re-redis-data: # Named volume definition
