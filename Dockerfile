@@ -4,14 +4,14 @@ FROM golang:1.20-alpine AS builder
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy all files into the container
-COPY . .
-
 # Copy only the necessary Go application dependency files to maximize caching
 COPY go.mod go.sum ./
 
 # Download and cache Go dependencies
 RUN go mod download
+
+# Copy the entire source code into the container
+COPY . .
 
 # Build the Go application for Linux
 RUN CGO_ENABLED=0 GOOS=linux go build -o re-redis
@@ -22,8 +22,8 @@ FROM alpine:latest
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy all files, including the built executable and additional files, from the previous stage
-COPY --from=builder /app /app
+# Copy only the built executable from the previous stage
+COPY --from=builder /app/re-redis /app/re-redis
 
 # Command to run the executable
 CMD ["./re-redis"]
