@@ -1,0 +1,6 @@
+version: '3'
+services:
+  re-redis:
+    build: .
+    ports:
+      - "7369:7369"
