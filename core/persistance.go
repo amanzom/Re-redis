@@ -131,7 +131,7 @@ func TriggerAofWriteFromBuffer() error {
 func reconstructStoreFromAof() error {
 	logger.Info("Starting store reconstruct on boot up")
 	// Open aofFile with read-write and create flags
-	aofFile, err := os.OpenFile(config.AofFilePath, os.O_RDONLY, os.ModeAppend)
+	aofFile, err := os.OpenFile(config.AofFilePath, os.O_RDWR|os.O_CREATE, os.ModeAppend)
 	if err != nil {
 		return errors.New(fmt.Sprintf("error opening aof file for reconstructing store, err: %v", err))
 	}

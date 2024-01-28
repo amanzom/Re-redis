@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/amanzom/re-redis/core"
+	"github.com/amanzom/re-redis/core/iomultiplexer"
 	"github.com/amanzom/re-redis/pkg/logger"
 )
 
@@ -28,7 +29,6 @@ func NewAsyncTcpServer(host string, port int) Server {
 var cronLastExecTime = time.Now()
 var cronFreq = 1 * time.Second
 
-// using kqueue in go: https://dev.to/frosnerd/writing-a-simple-tcp-server-using-kqueue-cah
 func (s *AsyncTcpServer) StartServer() {
 	logger.Info("Starting new async tcp server at host: %v and port: %v", s.Host, s.Port)
 
@@ -74,35 +74,17 @@ func (s *AsyncTcpServer) StartServer() {
 	}
 
 	// IO multiplexing starts here
-	// creating kernel event queue
-	kqueueFD, err := syscall.Kqueue()
+	ioMultiplexer, err := iomultiplexer.New(maxClients)
 	if err != nil {
 		logger.Error("failed creating kqueue fd, err: %v", err)
 		return
 	}
-	defer syscall.Close(kqueueFD)
+	defer ioMultiplexer.Close()
 
-	// registering the fds(in this case socketFD) whose change events we want to listen to.
-	// since we want to subscribe for incoming connection events over socket.
-	changeEvent := syscall.Kevent_t{
-		Ident:  uint64(socketFD),    // fd we want to suscribe to
-		Filter: syscall.EVFILT_READ, // Filter that processes the event. Set to EVFILT_READ,
-		// which, when used in combination with a listening socket, indicates that we are interested in incoming connection events.
-		Flags: syscall.EV_ADD | syscall.EV_ENABLE, // Flags that indicate what actions to perform with this event. In our case
-		// we want to add the event to kqueue (EV_ADD), i.e. subscribing to it, and enable it (EV_ENABLE).
-		Fflags: 0,
-		Data:   0,
-		Udata:  nil,
-	}
-	changeEventRegistered, err := syscall.Kevent(
-		kqueueFD,
-		[]syscall.Kevent_t{changeEvent},
-		nil,
-		nil,
-	)
-	if err != nil || changeEventRegistered == -1 {
-		logger.Error("failed registering change event to kqueue, err: %v", err)
-		return
+	// subscribing over socketFD for incoming connections over socket
+	err = ioMultiplexer.Subscribe(socketFD)
+	if err != nil {
+		logger.Error(err.Error())
 	}
 
 	// event loop pooling
@@ -120,24 +102,17 @@ func (s *AsyncTcpServer) StartServer() {
 			cronLastExecTime = time.Now()
 		}
 
-		// when registered fds are ready for IO, will be pushed into kqueue which are polled out in newEvents
-		newEvents := make([]syscall.Kevent_t, maxClients)
-		numNewEvents, err := syscall.Kevent( // blocking call till any of the fds are available for IO
-			kqueueFD,
-			nil,
-			newEvents,
-			nil,
-		)
+		// polling for ready fds for i/o
+		newEvents, err := ioMultiplexer.Poll()
 		if err != nil {
 			logger.Error("failed pooling events from kqueue, err: %v", err)
 			continue
 		}
 
-		for i := 0; i < numNewEvents; i++ {
-			currentEvent := newEvents[i]
-			currentEventFD := int(currentEvent.Ident)
+		for _, currentEvent := range newEvents {
+			currentEventFD := int(currentEvent.Fd)
 
-			if currentEvent.Flags&syscall.EV_EOF != 0 { // client closing connection
+			if currentEvent.CloseConnection { // client closing connection
 				clientsConnected--
 				logger.Info("Closing connection on: %v, %v with total concurrent clients: %v", s.Host, s.Port, clientsConnected)
 				syscall.Close(currentEventFD)
@@ -155,23 +130,9 @@ func (s *AsyncTcpServer) StartServer() {
 					continue
 				}
 
-				// registering/subscribing to socketConnectionFD over kqueue for change events
-				// to be able to process requests over this tcp connection
-				socketEvent := syscall.Kevent_t{
-					Ident:  uint64(socketConnectionFD),
-					Filter: syscall.EVFILT_READ,
-					Flags:  syscall.EV_ADD | syscall.EV_ENABLE,
-					Fflags: 0,
-					Data:   0,
-					Udata:  nil,
-				}
-				socketEventRegistered, err := syscall.Kevent(
-					kqueueFD,
-					[]syscall.Kevent_t{socketEvent},
-					nil,
-					nil,
-				)
-				if err != nil || socketEventRegistered == -1 {
+				// subscribing over socketConnectionFD for incoming requests over connection
+				err = ioMultiplexer.Subscribe(socketConnectionFD)
+				if err != nil {
 					logger.Error("failed registering socket change event to kqueue, err: %v", err)
 					syscall.Close(socketConnectionFD)
 					continue
