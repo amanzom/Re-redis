@@ -33,9 +33,15 @@ func PutInStore(k string, obj *Obj) {
 		evict()
 	}
 
+	if _, ok := store[k]; !ok {
+		// updating stats
+		incrementKeyspaceStats("keys")
+	}
+
+	store[k] = obj
+
 	// storing in commands buffer for aof writes periodically
 	commandsBuffer.Write(getKeyValueSetCommandRespEncodedBytes(k, obj.Value))
-	store[k] = obj
 }
 
 func GetFromStore(k string) *Obj {
@@ -53,6 +59,9 @@ func GetFromStore(k string) *Obj {
 func DelFromStore(k string) bool {
 	if _, ok := store[k]; ok {
 		delete(store, k)
+
+		// updating stats
+		decrementKeyspaceStats("keys")
 
 		// storing in commands buffer for aof writes periodically
 		commandsBuffer.Write(getKeyValueDeleteCommandRespEncodedBytes(k))

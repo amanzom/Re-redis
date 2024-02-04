@@ -11,6 +11,9 @@ const (
 	del        = "del"
 	bgWriteAof = "bgwriteaof"
 	incr       = "incr"
+	info       = "info"
+	client     = "client"
+	latency    = "latency"
 
 	// args
 	ex = "ex"
@@ -20,5 +23,6 @@ const (
 	resp_ok  = "+OK\r\n"
 
 	// eviction strategies
-	evictionStrategySimpleFirst = "simple-first"
+	evictionStrategySimpleFirst  = "simple-first"
+	evictionStrategAllKeysRandom = "allkeys-random"
 )

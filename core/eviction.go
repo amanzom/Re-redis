@@ -14,10 +14,25 @@ func evictSimpleFirst() {
 	}
 }
 
+func evictAllKeysRandom() {
+	numOfKeysToEvict := int64(config.EvictionRatio * float64(config.NumKeysThresholdForEviction))
+	// asumming maps traversal in hashmap is pretty random
+	for key := range store {
+		if numOfKeysToEvict <= 0 {
+			break
+		}
+		DelFromStore(key)
+		numOfKeysToEvict--
+	}
+}
+
 func evict() {
 	switch config.EvictionStrategy {
 	case evictionStrategySimpleFirst:
 		evictSimpleFirst()
+		break
+	case evictionStrategAllKeysRandom:
+		evictAllKeysRandom()
 		break
 	}
 }

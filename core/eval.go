@@ -32,6 +32,12 @@ func EvalCmds(cmds []*RedisCmd) []byte {
 			buf.Write(evalBgWriteAof(cmd.Args))
 		case incr:
 			buf.Write(evalIncr(cmd.Args))
+		case info:
+			buf.Write(evalInfo(cmd.Args))
+		case client:
+			buf.Write(evalClient(cmd.Args))
+		case latency:
+			buf.Write(evalLatency(cmd.Args))
 		default:
 			buf.Write(evalNotSupportedCmd(cmd.Cmd, cmd.Args))
 		}
@@ -204,4 +210,27 @@ func evalIncr(args []string) []byte {
 	// storing in commands buffer for aof writes periodically
 	commandsBuffer.Write(getKeyValueSetCommandRespEncodedBytes(key, val))
 	return Encode(i, false)
+}
+
+// we just provide no of keys present info under Keyspace stats
+func evalInfo(args []string) []byte {
+	var b []byte
+	buf := bytes.NewBuffer(b)
+	buf.Write([]byte("# Keyspace\r\n"))
+
+	var numKeys int64 = 0
+	if keyspaceStats[0] != nil {
+		numKeys = keyspaceStats[0]["keys"]
+	}
+
+	buf.Write([]byte(fmt.Sprintf("db0:keys=%v,expires=0,avg_ttl=0\r\n", numKeys)))
+	return Encode(buf.String(), false)
+}
+
+func evalClient(args []string) []byte {
+	return []byte(resp_ok)
+}
+
+func evalLatency(args []string) []byte {
+	return Encode([]string{}, false)
 }
