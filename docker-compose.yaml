@@ -40,6 +40,5 @@ services:
       - prometheus
 
 volumes:
-  re-redis-data: # Named volume definition for Redis data
   grafana-data: # Named volume definition for Grafana data
   prometheus-data: # Named volume definition for Prometheus data
