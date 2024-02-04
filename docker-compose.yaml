@@ -5,7 +5,41 @@ services:
     ports:
       - "7369:7369"
     volumes:
-      - re-redis-data:/app # Using named volume for persisting data
+      - ./re-redis.aof:/app/re-redis.aof # Bind mount to persist only re-redis.aof
+
+  redis_exporter:
+    image: oliver006/redis_exporter:v1.57.0
+    command:
+      - '--redis.addr=re-redis:7369'
+    ports:
+      - "9121:9121"
+    depends_on:
+      - re-redis
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus # Using named volume for persisting Prometheus data
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - redis_exporter
+
+  grafana:
+    image: grafana/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin_password
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana # Using named volume for persisting Grafana data
+    depends_on:
+      - prometheus
 
 volumes:
-  re-redis-data: # Named volume definition
+  re-redis-data: # Named volume definition for Redis data
+  grafana-data: # Named volume definition for Grafana data
+  prometheus-data: # Named volume definition for Prometheus data
