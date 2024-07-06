@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re-redis Playground</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #000;
+            color: white;
+            padding: 20px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .navbar .title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 23px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #000;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="title">Re-redis Playground</div>
+        <div>
+            <a href="https://github.com/amanzom/Re-redis" target="_blank">GitHub</a>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Re-redis Command Interface</h1>
+        <input type="text" id="commandInput" placeholder="Enter Redis command, ex: set k1 v1">
+        <button onclick="sendCommand()">Send Command</button>
+        <pre id="output"></pre>
+    </div>
+
+    <script>
+        async function sendCommand() {
+            const commandInput = document.getElementById('commandInput').value;
+            const outputElement = document.getElementById('output');
+
+            if (!commandInput.trim()) {
+                outputElement.textContent = 'Please enter a command.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/redis-command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command: commandInput })
+                });
+
+                const result = await response.json();
+                outputElement.textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                outputElement.textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
