@@ -71,12 +71,12 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	rdb = redis.NewClient(&redis.Options{
-		Addr: "localhost:7369",
+		Addr: "re-redis:7369", // for running on local change this to localhost:7369
 	})
 
 	http.Handle("/", http.FileServer(http.Dir("./playground"))) // Serve the static HTML
 	http.HandleFunc("/redis-command", handleCommand)            // Endpoint to handle Redis commands
 
-	fmt.Println("Server started at :8080")
-	http.ListenAndServe(":8080", nil)
+	fmt.Println("Server started at :8083")
+	http.ListenAndServe(":8083", nil)
 }

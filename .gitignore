@@ -1,2 +1,6 @@
 bin/Re-redis
 *.aof
+
+# Vendor directory
+/vendor/
+/playground/vendor/

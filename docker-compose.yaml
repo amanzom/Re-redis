@@ -7,6 +7,15 @@ services:
     volumes:
       - ./re-redis.aof:/app/re-redis.aof # Bind mount to persist only re-redis.aof
 
+  playground:
+    build: ./playground
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./playground:/app/playground
+    depends_on:
+      - re-redis
+
   redis_exporter:
     image: oliver006/redis_exporter:v1.57.0
     command:
