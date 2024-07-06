@@ -150,7 +150,7 @@ func (s *AsyncTcpServer) StartServer() {
 					syscall.Close(currentEventFD)
 					continue
 				}
-				logger.Info("cmds from client: %v", cmds)
+				printCommands(cmds)
 				err = respond(cmds, comm)
 				if err != nil {
 					logger.Error("error writing response at host, port: %v, %v, err: %v", s.Host, s.Port, err.Error())
@@ -158,4 +158,12 @@ func (s *AsyncTcpServer) StartServer() {
 			}
 		}
 	}
+}
+
+func printCommands(cmds []*core.RedisCmd) {
+	logger.Info("************* cmds from client start *************")
+	for _, cmd := range cmds {
+		logger.Info("cmd: %v, arg: %v", cmd.Cmd, cmd.Args)
+	}
+	logger.Info("************* cmds from client end *************")
 }
