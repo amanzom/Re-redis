@@ -14,11 +14,11 @@ var ctx = context.Background()
 var rdb *redis.Client
 
 type CommandRequest struct {
-	Command string `json:"command"`
+	Commands []string `json:"commands"`
 }
 
 type CommandResponse struct {
-	Result string `json:"result"`
+	Results []interface{} `json:"results"`
 }
 
 type ErrorResponse struct {
@@ -33,18 +33,24 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Split the command string into separate arguments
-	args := strings.Fields(req.Command)
+	pipe := rdb.Pipeline()
+	cmds := make([]*redis.Cmd, len(req.Commands))
 
-	// Convert []string to []interface{}
-	cmdArgs := make([]interface{}, len(args))
-	for i, v := range args {
-		cmdArgs[i] = v
+	for i, cmdString := range req.Commands {
+		// Split the command string into separate arguments
+		args := strings.Fields(cmdString)
+
+		// Convert []string to []interface{}
+		cmdArgs := make([]interface{}, len(args))
+		for j, v := range args {
+			cmdArgs[j] = v
+		}
+
+		// Queue the command in the pipeline
+		cmds[i] = pipe.Do(ctx, cmdArgs...)
 	}
 
-	// Use the Do method to send the command
-	cmd := rdb.Do(ctx, cmdArgs...)
-	result, err := cmd.Result()
+	_, err = pipe.Exec(ctx)
 	if err != nil && err.Error() != "redis: nil" {
 		errorResponse := ErrorResponse{Error: err.Error()}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -53,7 +59,12 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := CommandResponse{Result: fmt.Sprintf("%v", result)}
+	results := make([]interface{}, len(cmds))
+	for i, cmd := range cmds {
+		results[i] = cmd.Val()
+	}
+
+	response := CommandResponse{Results: results}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

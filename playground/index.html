@@ -40,11 +40,17 @@
         h1 {
             font-size: 23px;
         }
-        input[type="text"] {
+        textarea {
             width: 100%;
+            height: 100px;
             padding: 10px;
             margin: 10px 0;
             box-sizing: border-box;
+        }
+        .helper-text {
+            font-size: 12px;
+            color: gray;
+            margin-bottom: 10px;
         }
         button {
             padding: 10px 20px;
@@ -70,8 +76,9 @@
     </div>
     <div class="container">
         <h1>Re-redis Command Interface</h1>
-        <input type="text" id="commandInput" placeholder="Enter Redis command, ex: set k1 v1">
-        <button onclick="sendCommand()">Send Command</button>
+        <textarea id="commandInput" placeholder="Enter Redis commands, one per line"></textarea>
+        <div class="helper-text">Multi-line commands utilize pipelining to execute commands in a single request, improving performance.</div>
+        <button onclick="sendCommand()">Send Commands</button>
         <pre id="output"></pre>
     </div>
 
@@ -81,9 +88,11 @@
             const outputElement = document.getElementById('output');
 
             if (!commandInput.trim()) {
-                outputElement.textContent = 'Please enter a command.';
+                outputElement.textContent = 'Please enter commands.';
                 return;
             }
+
+            const commands = commandInput.split('\n').map(cmd => cmd.trim()).filter(cmd => cmd);
 
             try {
                 const response = await fetch('/redis-command', {
@@ -91,7 +100,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ command: commandInput })
+                    body: JSON.stringify({ commands: commands })
                 });
 
                 const result = await response.json();
