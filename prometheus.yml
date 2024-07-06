@@ -1,6 +1,6 @@
 global:
-  scrape_interval:     1s
-  evaluation_interval: 1s
+  scrape_interval:     100s
+  evaluation_interval: 100s
 
 scrape_configs:
   - job_name: 'redis_exporter'
