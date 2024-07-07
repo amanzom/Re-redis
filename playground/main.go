@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
@@ -71,12 +72,15 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	rdb = redis.NewClient(&redis.Options{
-		Addr: "re-redis:7369", // for running on local change this to localhost:7369
+		Addr: "re-redis:" + os.Getenv("PORT_RE_REDIS"),
 	})
 
 	http.Handle("/", http.FileServer(http.Dir("./playground"))) // Serve the static HTML
 	http.HandleFunc("/redis-command", handleCommand)            // Endpoint to handle Redis commands
 
-	fmt.Println("Server started at :8083")
-	http.ListenAndServe(":8083", nil)
+	port := os.Getenv("PORT_RE_REDIS_PLAYGROUND")
+	fmt.Println(port)
+	fmt.Println(fmt.Sprintf("Server started at :%v", port))
+
+	http.ListenAndServe(":"+"8083", nil)
 }
