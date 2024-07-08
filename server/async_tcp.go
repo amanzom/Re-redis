@@ -30,8 +30,10 @@ var cronLastExecTime = time.Now()
 var cronFreq = 1 * time.Second
 
 func (s *AsyncTcpServer) StartServer() {
-	logger.Info("Starting new async tcp server at host: %v and port: %v", s.Host, s.Port)
+	// marking engine status as shutting down on function termination
+	defer core.MarEngineStatusShuttingDown()
 
+	logger.Info("Starting new async tcp server at host: %v and port: %v", s.Host, s.Port)
 	// creating the socket
 	// params description:
 	// syscall.AF_INET - represents we are using ipv4 address family
@@ -87,9 +89,9 @@ func (s *AsyncTcpServer) StartServer() {
 		logger.Error(err.Error())
 	}
 
-	// event loop pooling
+	// event loop pooling till engine not in shutting down state
 	clientsConnected := 0
-	for {
+	for !core.IsEngineStatusShuttingDown() {
 		// executing crons
 		if time.Now().After(cronLastExecTime.Add(cronFreq)) {
 			// auto deletion of expired keys
@@ -107,6 +109,15 @@ func (s *AsyncTcpServer) StartServer() {
 		if err != nil {
 			logger.Error("failed pooling events from kqueue, err: %v", err)
 			continue
+		}
+
+		// mark engine status busy before reading fds to prevent shutdown in
+		// bw servering requests, if unable to transition from waiting to busy
+		// it means engine was in some other state - if shutting down state then return from here
+		if !core.MarkEngineStatusBusy() {
+			if core.IsEngineStatusShuttingDown() {
+				return
+			}
 		}
 
 		for _, currentEvent := range newEvents {
@@ -157,6 +168,9 @@ func (s *AsyncTcpServer) StartServer() {
 				}
 			}
 		}
+
+		// mark engine state waiting after processing fds requests
+		core.MarkEngineStatusWaiting()
 	}
 }
 
