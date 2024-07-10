@@ -11,38 +11,76 @@ import (
 	"github.com/amanzom/re-redis/pkg/logger"
 )
 
-func EvalCmds(cmds []*RedisCmd) []byte {
+// Note for Txns:
+// Tnx commands are queued regardless of whether they will fail
+// when 'exec' is called. Final response after exec will return array of
+// result - with error for failed commands in that txn
+// TODO: add support for checking the error status before queueing the commands
+
+var txnEndCommands = map[string]bool{exec: true, discard: true}
+
+func EvalCmds(cmds []*RedisCmd, c *Client) []byte {
 	var response []byte
 	buf := bytes.NewBuffer(response)
 	for _, cmd := range cmds {
-		switch strings.ToLower(cmd.Cmd) {
-		case ping:
-			buf.Write(evalPing(cmd.Args))
-		case set:
-			buf.Write(evalSet(cmd.Args))
-		case get:
-			buf.Write(evalGet(cmd.Args))
-		case ttl:
-			buf.Write(evalTtl(cmd.Args))
-		case expire:
-			buf.Write(evalExpire(cmd.Args))
-		case del:
-			buf.Write(evalDel(cmd.Args))
-		case bgWriteAof:
-			buf.Write(evalBgWriteAof(cmd.Args))
-		case incr:
-			buf.Write(evalIncr(cmd.Args))
-		case info:
-			buf.Write(evalInfo(cmd.Args))
-		case client:
-			buf.Write(evalClient(cmd.Args))
-		case latency:
-			buf.Write(evalLatency(cmd.Args))
-		default:
-			buf.Write(evalNotSupportedCmd(cmd.Cmd, cmd.Args))
+		// client not in txn mode - return the result
+		if !c.IsTxnMode() {
+			buf.Write(executeCommand(cmd, c))
+			continue
+		}
+
+		// in txn mode cases:
+		// 1. commands to return txn results i.e. exec or discard execute -
+		// return the res of client's txn queued commands and discard txn
+		// 2. else queue the commands in client's txn queue
+		if txnEndCommands[cmd.Cmd] {
+			buf.Write(executeCommand(cmd, c))
+		} else {
+			// nested txn's not allowed, i.e. if already received multi - return error
+			if cmd.Cmd == multi {
+				buf.Write(Encode(errors.New("ERR MULTI calls can not be nested"), false))
+				continue
+			}
+			c.EnqueueTxnCommand(cmd)
+			buf.Write([]byte(resp_queued))
 		}
 	}
 	return buf.Bytes()
+}
+
+func executeCommand(cmd *RedisCmd, c *Client) []byte {
+	switch strings.ToLower(cmd.Cmd) {
+	case ping:
+		return evalPing(cmd.Args)
+	case set:
+		return evalSet(cmd.Args)
+	case get:
+		return evalGet(cmd.Args)
+	case ttl:
+		return evalTtl(cmd.Args)
+	case expire:
+		return evalExpire(cmd.Args)
+	case del:
+		return evalDel(cmd.Args)
+	case bgWriteAof:
+		return evalBgWriteAof(cmd.Args)
+	case incr:
+		return evalIncr(cmd.Args)
+	case info:
+		return evalInfo(cmd.Args)
+	case client:
+		return evalClient(cmd.Args)
+	case latency:
+		return evalLatency(cmd.Args)
+	case multi:
+		return evalMulti(cmd.Args, c)
+	case exec:
+		return evalExec(cmd.Args, c)
+	case discard:
+		return evalDiscard(cmd.Args, c)
+	default:
+		return evalNotSupportedCmd(cmd.Cmd, cmd.Args)
+	}
 }
 
 func evalNotSupportedCmd(cmd string, args []string) []byte {
@@ -233,4 +271,24 @@ func evalClient(args []string) []byte {
 
 func evalLatency(args []string) []byte {
 	return Encode([]string{}, false)
+}
+
+func evalMulti(args []string, c *Client) []byte {
+	c.MarkClientInTxnMode()
+	return []byte(resp_ok)
+}
+
+func evalExec(args []string, c *Client) []byte {
+	if !c.IsTxnMode() {
+		return Encode(errors.New("ERR EXEC without MULTI"), false)
+	}
+	return c.ExecuteTxnQueuedCommands()
+}
+
+func evalDiscard(args []string, c *Client) []byte {
+	if !c.IsTxnMode() {
+		return Encode(errors.New("ERR DISCARD without MULTI"), false)
+	}
+	c.DiscardTxn()
+	return []byte(resp_ok)
 }
