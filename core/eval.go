@@ -14,8 +14,16 @@ import (
 // Note for Txns:
 // Tnx commands are queued regardless of whether they will fail
 // when 'exec' is called. Final response after exec will return array of
-// result - with error for failed commands in that txn
-// TODO: add support for checking the error status before queueing the commands
+// results - with errors for failed commands in that txn.
+// TODO: add support for checking the error status before queueing the commands.
+
+// Aof file is written using commands buffer which currently doesn't log the txn state.
+// For the commands executed in txn, it may happen during reconstruction of store
+// from aof some commands failed due to some reason and will result in an inconsistent state
+// of store which should not happen for cmds executed in txn. Ideally, we would need to add
+// support for logging txn state for commands executed in txn while writing them to aof so that
+// inconsistent states can be avoided during reconstruction i.e. either use all the cmds
+// of a txn or discard all of them during reconstruction.
 
 var txnEndCommands = map[string]bool{exec: true, discard: true}
 
