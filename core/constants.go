@@ -14,13 +14,17 @@ const (
 	info       = "info"
 	client     = "client"
 	latency    = "latency"
+	multi      = "multi"
+	exec       = "exec"
+	discard    = "discard"
 
 	// args
 	ex = "ex"
 
 	// resp
-	resp_nil = "$-1\r\n"
-	resp_ok  = "+OK\r\n"
+	resp_nil    = "$-1\r\n"
+	resp_ok     = "+OK\r\n"
+	resp_queued = "+QUEUED\r\n"
 
 	// eviction strategies
 	evictionStrategySimpleFirst  = "simple-first"

@@ -163,7 +163,7 @@ func reconstructStoreFromAof() error {
 	}
 
 	// this internally will replay commands to reconstruct store and will put them in the commandsBuffer as well so reinitialise commandsBuffer
-	EvalCmds(redisCmds)
+	EvalCmds(redisCmds, &Client{}) // reconstruction will not need client's context(needed only for txn's, aof file does not logs txn commands - multi, exec, discard)
 
 	// re-initialise with empty buffer
 	var b []byte

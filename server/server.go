@@ -23,9 +23,9 @@ func readCommands(conn io.ReadWriter) ([]*core.RedisCmd, error) {
 	return core.GetRedisCmdObjects(buffer, n)
 }
 
-func respond(cmds []*core.RedisCmd, conn io.ReadWriter) error {
-	buffer := core.EvalCmds(cmds)
-	if _, err := conn.Write(buffer); err != nil {
+func respond(cmds []*core.RedisCmd, client *core.Client) error {
+	buffer := core.EvalCmds(cmds, client)
+	if _, err := client.Write(buffer); err != nil {
 		return err
 	}
 	return nil

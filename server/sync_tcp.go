@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/amanzom/re-redis/core"
 	"github.com/amanzom/re-redis/pkg/logger"
 )
 
@@ -56,7 +57,7 @@ func (s *SyncTcpServer) StartServer() {
 			}
 			logger.Info("cmd from client: %v", cmds)
 
-			err = respond(cmds, conn)
+			err = respond(cmds, &core.Client{})
 			if err != nil {
 				logger.Error("error writing response for client with address: %v, on: %v, %v, err: %v", conn.RemoteAddr(), s.Host, s.Port, err.Error())
 			}
