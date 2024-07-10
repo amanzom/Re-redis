@@ -23,7 +23,7 @@ func HandleGracefulShutdown(wg *sync.WaitGroup, signalChan chan os.Signal) {
 	// blocking call till shutdown signals is received
 	<-signalChan
 
-	// wait for existing requests getting served - enine state busy
+	// wait for existing requests getting served - engine state busy
 	for atomic.LoadInt32(&engineStatus) == engineStatusBusy {
 	}
 
