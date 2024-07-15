@@ -11,7 +11,7 @@ Re-redis, as its name suggests is an in-memory database inspired by redis. It im
 5. [Pipeling](https://redis.io/docs/latest/develop/use/pipelining/) support where we can issue multiple commands at once without waiting for the response to each individual command.
 6. [Persistance](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/) support via AOF, to support reconstruction of key-value store due to unexpected downtime.
 7. [Object encoding](https://redis.io/docs/latest/commands/object-encoding/), currently supports only string object with its corresponding encodings- raw, int and embedded string.
-8. [Keys eviction](https://redis.io/docs/latest/develop/reference/eviction/) using Approximated LRU and all keys random eviction algorithms
+8. [Keys eviction](https://redis.io/docs/latest/develop/reference/eviction/) using Approximated LRU and all keys random eviction algorithms.
 9. [Transactions](https://redis.io/docs/latest/develop/interact/transactions/) support using MULTI, EXEC and DISCARD commands
 10. Background rewrite of AOF using [BGWRITEAOF](https://redis.io/docs/latest/commands/bgrewriteaof/) command.
 
