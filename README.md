@@ -4,7 +4,7 @@ Re-redis
 Re-redis, as its name suggests is an in-memory database inspired by redis. It implements some of the redis's core features in golang.
 
 ## Key features of Re-redis
-1. Re-redis speaks redis dialect as it implements [RESP](https://redis.io/docs/latest/develop/reference/protocol-spec/), you can connect to it with any Redis Client and the simplest way it to use a [Redis CLI](https://redis.io/docs/manual/cli/). Programmatically, depending on the language you prefer, you can use your favourite Redis library to connect.
+1. Re-redis speaks redis dialect as it implements [RESP](https://redis.io/docs/latest/develop/reference/protocol-spec/), so you can connect to it with any Redis Client. The simplest way is to use a [Redis CLI](https://redis.io/docs/manual/cli/). Programmatically, depending on the language you prefer, you can use your favourite Redis library to connect.
 2. Single-threaded - uses [IO multiplexing](https://wiki.c2.com/?IoMultiplexing) and [Event Loop](https://en.wikipedia.org/wiki/Event_loop) to support concurrent clients, using [KQUEUE](https://man.freebsd.org/cgi/man.cgi?kqueue) for [OSX (Darwin) based environment](https://en.wikipedia.org/wiki/MacOS) and [Epool](https://en.wikipedia.org/wiki/Epoll#:~:text=epoll%20is%20a%20Linux%20kernel,45%20of%20the%20Linux%20kernel.) for  [Linux based environment](https://en.wikipedia.org/wiki/Comparison_of_Linux_distributions).
 3. Key commands supported - PING, SET, GET, TTL, EXPIRE, DEL, BGWRITEAOF, INCR, INFO, MULTI, EXEC, DISCARD.
 4. [Active and passive](https://redis.io/docs/latest/commands/expire/#:~:text=How%20Redis%20expires%20keys,will%20never%20be%20accessed%20again.) deletion of expired keys.
@@ -41,5 +41,5 @@ $ go run main.go
 ```
 
 ## Re-redis Playground:
-[Re-Redis Playground](http://15.207.107.93:8083/) is an interactive site that allows users to experiment with Redis features in real-time on a hosted Re-Redis server.
+[Re-Redis Playground](http://15.207.107.93:8083/) is an interactive site that allows users to experiment with Re-redis features in real-time on a hosted Re-Redis server.
 Give it a try [here](http://15.207.107.93:8083/).
