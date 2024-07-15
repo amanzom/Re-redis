@@ -8,7 +8,7 @@ Re-redis, as its name suggests is an in-memory database inspired by redis. It im
 2. Single-threaded - uses [IO multiplexing](https://wiki.c2.com/?IoMultiplexing) and [Event Loop](https://en.wikipedia.org/wiki/Event_loop) to support concurrent clients, using [KQUEUE](https://man.freebsd.org/cgi/man.cgi?kqueue) for [OSX (Darwin) based environment](https://en.wikipedia.org/wiki/MacOS) and [Epool](https://en.wikipedia.org/wiki/Epoll#:~:text=epoll%20is%20a%20Linux%20kernel,45%20of%20the%20Linux%20kernel.) for  [Linux based environment](https://en.wikipedia.org/wiki/Comparison_of_Linux_distributions).
 3. Key commands supported - PING, SET, GET, TTL, EXPIRE, DEL, BGWRITEAOF, INCR, INFO, MULTI, EXEC, DISCARD.
 4. [Active and passive](https://redis.io/docs/latest/commands/expire/#:~:text=How%20Redis%20expires%20keys,will%20never%20be%20accessed%20again.) deletion of expired keys.
-5. [Pipeling](https://redis.io/docs/latest/develop/use/pipelining/) support where we can issue multiple commands at once without waiting for the response to each individual command.
+5. [Pipelining](https://redis.io/docs/latest/develop/use/pipelining/) support where we can issue multiple commands at once without waiting for the response to each individual command.
 6. [Persistance](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/) support via AOF, to support reconstruction of key-value store due to unexpected downtime.
 7. [Object encoding](https://redis.io/docs/latest/commands/object-encoding/), currently supports only string object with its corresponding encodings- raw, int and embedded string.
 8. [Keys eviction](https://redis.io/docs/latest/develop/reference/eviction/) using Approximated LRU and all keys random eviction algorithms.
