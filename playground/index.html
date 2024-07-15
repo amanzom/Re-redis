@@ -80,6 +80,9 @@
         .readme h2 {
             font-size: 12px;
         }
+        .readme p {
+            font-size: 12px;
+        }
         .readme ul {
             padding-left: 20px;
             font-size: 12px;
@@ -120,17 +123,17 @@
         <pre id="output"></pre>
         
         <div class="readme">
-            <h2>Key Features of <a href="https://github.com/amanzom/Re-redis" target="_blank">Re-redis</a></h2>
+            <p><b><a href="https://github.com/amanzom/Re-redis" target="_blank">Re-redis</a></b>, as its name suggests, is an in-memory database inspired by redis. It implements some of the redis's core features in golang. This interface lets you play around with its core functionalities. Enter any Re-redis supported commands(listed below) to start, ex: PING.</p>
             <div id="readme-content">
+                <h2>Key Features of Re-redis:</h2>
                 <ul>
                     <li>Re-redis speaks Redis dialect as it implements <a href="https://redis.io/docs/latest/develop/reference/protocol-spec/" target="_blank">RESP</a>, so you can connect to it with any Redis Client. The simplest way is to use a <a href="https://redis.io/docs/manual/cli/" target="_blank">Redis CLI</a>. Programmatically, depending on the language you prefer, you can use your favourite Redis library to connect.</li>
-                    <li>Single-threaded - uses <a href="https://wiki.c2.com/?IoMultiplexing" target="_blank">IO multiplexing</a> and <a href="https://en.wikipedia.org/wiki/Event_loop" target="_blank">Event Loop</a> to support concurrent clients, using <a href="https://man.freebsd.org/cgi/man.cgi?kqueue" target="_blank">KQUEUE</a> for <a href="https://en.wikipedia.org/wiki/MacOS" target="_blank">OSX (Darwin) based environment</a> and <a href="https://en.wikipedia.org/wiki/Epoll#:~:text=epoll%20is%20a%20Linux%20kernel,45%20of%20the%20Linux%20kernel." target="_blank">Epoll</a> for <a href="https://en.wikipedia.org/wiki/Comparison_of_Linux_distributions" target="_blank">Linux based environment</a>.</li>
                 </ul>
             </div>
             <div id="load-more" class="load-more" onclick="loadMoreInfo()">Load more</div>
         </div>
     </div>
-
+                
     <script>
         async function sendCommand() {
             const commandInput = document.getElementById('commandInput').value;
@@ -164,6 +167,7 @@
             const loadMore = document.getElementById('load-more');
 
             readmeContent.innerHTML = `
+                <h2>Key Features of Re-redis:</h2>
                 <ul>
                     <li>Re-redis speaks Redis dialect as it implements <a href="https://redis.io/docs/latest/develop/reference/protocol-spec/" target="_blank">RESP</a>, so you can connect to it with any Redis Client. The simplest way is to use a <a href="https://redis.io/docs/manual/cli/" target="_blank">Redis CLI</a>. Programmatically, depending on the language you prefer, you can use your favourite Redis library to connect.</li>
                     <li>Single-threaded - uses <a href="https://wiki.c2.com/?IoMultiplexing" target="_blank">IO multiplexing</a> and <a href="https://en.wikipedia.org/wiki/Event_loop" target="_blank">Event Loop</a> to support concurrent clients, using <a href="https://man.freebsd.org/cgi/man.cgi?kqueue" target="_blank">KQUEUE</a> for <a href="https://en.wikipedia.org/wiki/MacOS" target="_blank">OSX (Darwin) based environment</a> and <a href="https://en.wikipedia.org/wiki/Epoll#:~:text=epoll%20is%20a%20Linux%20kernel,45%20of%20the%20Linux%20kernel." target="_blank">Epoll</a> for <a href="https://en.wikipedia.org/wiki/Comparison_of_Linux_distributions" target="_blank">Linux based environment</a>.</li>
