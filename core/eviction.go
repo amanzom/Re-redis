@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/amanzom/re-redis/config"
+	"github.com/amanzom/re-redis/pkg/logger"
 )
 
 // iterates on a randomized sample of keys evicts the first key
@@ -26,13 +27,20 @@ func evictAllKeysRandom() {
 	}
 }
 
+func evictAllKeysLru() {
+	triggerApproximatedLruEviction()
+}
+
 func evict() {
+	logger.Info("Triggered eviction")
 	switch config.EvictionStrategy {
 	case evictionStrategySimpleFirst:
 		evictSimpleFirst()
 		break
 	case evictionStrategAllKeysRandom:
 		evictAllKeysRandom()
+	case evictionStrategAllKeysLru:
+		evictAllKeysLru()
 		break
 	}
 }

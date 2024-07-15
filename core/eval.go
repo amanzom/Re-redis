@@ -234,8 +234,7 @@ func evalIncr(args []string) []byte {
 	key := args[0]
 	obj := GetFromStore(key)
 	if obj == nil {
-		obj = NewObj("0", -1, ObjectTypeString, ObjectEncodingInt)
-		PutInStore(key, obj)
+		PutInStore(key, NewObj("0", -1, ObjectTypeString, ObjectEncodingInt))
 	}
 
 	if !assertType(uint8(obj.TypeEncoding), ObjectTypeString) {
