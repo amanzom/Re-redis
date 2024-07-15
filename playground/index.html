@@ -14,6 +14,7 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            line-height: 1.6;
         }
         .navbar {
             background-color: #000;
@@ -31,6 +32,11 @@
         .navbar .title {
             font-size: 24px;
             font-weight: bold;
+            cursor: pointer;
+        }
+        .navbar .subtitle {
+            font-size: 12px;
+            color: #ccc;
         }
         .container {
             max-width: 600px;
@@ -65,21 +71,64 @@
             margin-top: 10px;
             white-space: pre-wrap;
         }
+        .readme {
+            margin-top: 40px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .readme h2 {
+            font-size: 12px;
+        }
+        .readme ul {
+            padding-left: 20px;
+            font-size: 12px;
+        }
+        .readme ul li {
+            margin-bottom: 10px;
+        }
+        .readme a {
+            text-decoration: underline;
+            color: black;
+        }
+        .readme a:hover {
+            text-decoration: underline;
+        }
+        .load-more {
+            font-size: 12px;
+            color: black;
+            cursor: pointer;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
-        <div class="title">Re-redis Playground</div>
+        <div>
+            <div class="title" onclick="location.reload()">Re-redis Playground</div>
+            <div class="subtitle">Interface to play around with Re-redis's core functionalities</div>
+        </div>
         <div>
             <a href="https://github.com/amanzom/Re-redis" target="_blank">GitHub</a>
         </div>
     </div>
     <div class="container">
-        <h1>Re-redis Command Interface</h1>
-        <textarea id="commandInput" placeholder="Enter Redis commands, one per line"></textarea>
+        <h1>Command Interface</h1>
+        <textarea id="commandInput" placeholder="Enter Re-redis commands, one per line"></textarea>
         <div class="helper-text">Multi-line commands utilize pipelining to execute commands in a single request, improving performance.</div>
         <button onclick="sendCommand()">Send Commands</button>
         <pre id="output"></pre>
+        
+        <div class="readme">
+            <h2>Key Features of <a href="https://github.com/amanzom/Re-redis" target="_blank">Re-redis</a></h2>
+            <div id="readme-content">
+                <ul>
+                    <li>Re-redis speaks Redis dialect as it implements <a href="https://redis.io/docs/latest/develop/reference/protocol-spec/" target="_blank">RESP</a>, so you can connect to it with any Redis Client. The simplest way is to use a <a href="https://redis.io/docs/manual/cli/" target="_blank">Redis CLI</a>. Programmatically, depending on the language you prefer, you can use your favourite Redis library to connect.</li>
+                    <li>Single-threaded - uses <a href="https://wiki.c2.com/?IoMultiplexing" target="_blank">IO multiplexing</a> and <a href="https://en.wikipedia.org/wiki/Event_loop" target="_blank">Event Loop</a> to support concurrent clients, using <a href="https://man.freebsd.org/cgi/man.cgi?kqueue" target="_blank">KQUEUE</a> for <a href="https://en.wikipedia.org/wiki/MacOS" target="_blank">OSX (Darwin) based environment</a> and <a href="https://en.wikipedia.org/wiki/Epoll#:~:text=epoll%20is%20a%20Linux%20kernel,45%20of%20the%20Linux%20kernel." target="_blank">Epoll</a> for <a href="https://en.wikipedia.org/wiki/Comparison_of_Linux_distributions" target="_blank">Linux based environment</a>.</li>
+                </ul>
+            </div>
+            <div id="load-more" class="load-more" onclick="loadMoreInfo()">Load more</div>
+        </div>
     </div>
 
     <script>
@@ -108,6 +157,27 @@
             } catch (error) {
                 outputElement.textContent = `Error: ${error.message}`;
             }
+        }
+
+        function loadMoreInfo() {
+            const readmeContent = document.getElementById('readme-content');
+            const loadMore = document.getElementById('load-more');
+
+            readmeContent.innerHTML = `
+                <ul>
+                    <li>Re-redis speaks Redis dialect as it implements <a href="https://redis.io/docs/latest/develop/reference/protocol-spec/" target="_blank">RESP</a>, so you can connect to it with any Redis Client. The simplest way is to use a <a href="https://redis.io/docs/manual/cli/" target="_blank">Redis CLI</a>. Programmatically, depending on the language you prefer, you can use your favourite Redis library to connect.</li>
+                    <li>Single-threaded - uses <a href="https://wiki.c2.com/?IoMultiplexing" target="_blank">IO multiplexing</a> and <a href="https://en.wikipedia.org/wiki/Event_loop" target="_blank">Event Loop</a> to support concurrent clients, using <a href="https://man.freebsd.org/cgi/man.cgi?kqueue" target="_blank">KQUEUE</a> for <a href="https://en.wikipedia.org/wiki/MacOS" target="_blank">OSX (Darwin) based environment</a> and <a href="https://en.wikipedia.org/wiki/Epoll#:~:text=epoll%20is%20a%20Linux%20kernel,45%20of%20the%20Linux%20kernel." target="_blank">Epoll</a> for <a href="https://en.wikipedia.org/wiki/Comparison_of_Linux_distributions" target="_blank">Linux based environment</a>.</li>
+                    <li>Key commands supported - PING, SET, GET, TTL, EXPIRE, DEL, BGWRITEAOF, INCR, INFO, MULTI, EXEC, DISCARD.</li>
+                    <li><a href="https://redis.io/docs/latest/commands/expire/#:~:text=How%20Redis%20expires%20keys,will%20never%20be%20accessed%20again." target="_blank">Active and passive</a> deletion of expired keys.</li>
+                    <li><a href="https://redis.io/docs/latest/develop/use/pipelining/" target="_blank">Pipelining</a> support where we can issue multiple commands at once without waiting for the response to each individual command.</li>
+                    <li><a href="https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/" target="_blank">Persistence</a> support via AOF, to support reconstruction of key-value store due to unexpected downtime.</li>
+                    <li><a href="https://redis.io/docs/latest/commands/object-encoding/" target="_blank">Object encoding</a>, currently supports only string object with its corresponding encodings - raw, int and embedded string.</li>
+                    <li><a href="https://redis.io/docs/latest/develop/reference/eviction/" target="_blank">Keys eviction</a> using Approximated LRU and all keys random eviction algorithms.</li>
+                    <li><a href="https://redis.io/docs/latest/develop/interact/transactions/" target="_blank">Transactions</a> support using MULTI, EXEC and DISCARD commands.</li>
+                    <li>Background rewrite of AOF using <a href="https://redis.io/docs/latest/commands/bgrewriteaof/" target="_blank">BGWRITEAOF</a> command.</li>
+                </ul>
+            `;
+            loadMore.style.display = 'none';
         }
     </script>
 </body>
