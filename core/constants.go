@@ -29,4 +29,5 @@ const (
 	// eviction strategies
 	evictionStrategySimpleFirst  = "simple-first"
 	evictionStrategAllKeysRandom = "allkeys-random"
+	evictionStrategAllKeysLru    = "allkeys-lru"
 )

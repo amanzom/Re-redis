@@ -7,9 +7,12 @@ import (
 )
 
 type Obj struct {
-	Value        interface{}
-	ExpiresAt    int64
-	TypeEncoding typeEncoding
+	Value     interface{}
+	ExpiresAt int64 // redis keeps a different map for keys which have expiry set, we for simplicity
+	// have kept ExpiresAt inside main store object
+	TypeEncoding   typeEncoding
+	LastAccessedAt uint32 // we will be maintaining last accessed epoch's 24 bits in LastAccessedAt - the way handled in redis,
+	// to save extra 8 bits per object, though we are using uint32 since go does not supports bitfields.
 }
 
 var store map[string]*Obj
@@ -20,9 +23,10 @@ func NewObj(value interface{}, expiryInMs int64, oType uint8, oEnc uint8) *Obj {
 		expiresAt = time.Now().UnixMilli() + expiryInMs
 	}
 	return &Obj{
-		Value:        value,
-		ExpiresAt:    expiresAt,
-		TypeEncoding: typeEncoding(oType | oEnc),
+		Value:          value,
+		ExpiresAt:      expiresAt,
+		TypeEncoding:   typeEncoding(oType | oEnc),
+		LastAccessedAt: getLruClockCurrentTimestamp(),
 	}
 }
 
@@ -52,6 +56,9 @@ func GetFromStore(k string) *Obj {
 			DelFromStore(k)
 			return nil
 		}
+		// updating last accessed at for lru eviction in store and eviction pool
+		val.LastAccessedAt = getLruClockCurrentTimestamp()
+		evicitionPool.UpdateLastAccessedTimeForItem(k)
 	}
 	return val
 }

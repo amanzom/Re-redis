@@ -5,7 +5,7 @@ var Port int = 7369
 
 // eviction related
 var NumKeysThresholdForEviction int = 100
-var EvictionStrategy = "allkeys-random"
+var EvictionStrategy = "allkeys-lru"
 var EvictionRatio = 0.4
 
 // persistance related

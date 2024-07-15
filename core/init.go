@@ -10,6 +10,9 @@ import (
 func init() {
 	store = make(map[string]*Obj, 0)
 
+	// for LRU eviction
+	evicitionPool = newEvictionPool()
+
 	// initialising buffer for storing commands for aof writes periodically
 	var b []byte
 	commandsBuffer = bytes.NewBuffer(b)
