@@ -23,7 +23,7 @@ func getLruClockCurrentTimestamp() uint32 {
 // returns time for which the key is sitting idle
 func getIdleTime(lastAccessedAt uint32) uint32 {
 	c := getLruClockCurrentTimestamp()
-	if lastAccessedAt > c {
+	if lastAccessedAt < c {
 		return lastAccessedAt - c
 	}
 	return (0x00FFFFFF - lastAccessedAt) + c
