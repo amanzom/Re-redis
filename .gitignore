@@ -4,3 +4,6 @@ bin/Re-redis
 # Vendor directory
 /vendor/
 /playground/vendor/
+
+# Jetbrains
+/.idea
